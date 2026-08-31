@@ -40,7 +40,6 @@ print(fires["cluster_id"].value_counts().head(10))
 #                       get centroid (average lat/lon) of each cluster
 
 
-
 cluster_summary = (
     fires[fires["cluster_id"] != -1]
     .groupby("cluster_id")
@@ -53,3 +52,17 @@ cluster_summary = (
 )
 
 print(cluster_summary.head(10))
+
+
+
+clustered = fires[fires["cluster_id"] != -1].copy()
+
+
+clustered = clustered.merge(
+    cluster_summary[["centroid_lat", "centroid_lon", "detection_count"]],
+    on="cluster_id",
+    how="left",
+)
+
+cluster_dir = data_dir/'Cluster'
+clustered.to_csv(cluster_dir/'Clusters.csv',index=False)

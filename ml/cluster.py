@@ -41,7 +41,7 @@ print(fires["cluster_id"].value_counts().head(10))
 
 
 cluster_summary = (
-    fires[fires["cluster_id"] != -1]
+    fires
     .groupby("cluster_id")
     .agg(
         detection_count=("cluster_id", "size"),
@@ -55,7 +55,7 @@ print(cluster_summary.head(10))
 
 
 
-clustered = fires[fires["cluster_id"] != -1].copy()
+clustered = fires.copy()
 
 
 clustered = clustered.merge(

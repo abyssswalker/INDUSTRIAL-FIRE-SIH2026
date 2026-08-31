@@ -27,6 +27,8 @@ fires["cluster_id"] = model.fit_predict(coords)
 #                                          test
 
 
+
+
 n_clusters = fires["cluster_id"].nunique() - (
     1 if -1 in fires["cluster_id"].values else 0
 )

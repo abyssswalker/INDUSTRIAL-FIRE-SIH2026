@@ -49,6 +49,7 @@ cluster_summary = (
         centroid_lon=("longitude", "mean"),
     )
     .sort_values("detection_count", ascending=False)
+    .reset_index()
 )
 
 print(cluster_summary.head(10))
@@ -64,6 +65,8 @@ clustered = clustered.merge(
 )
 clustered["centroid_lat"] = clustered["centroid_lat"].fillna(clustered["latitude"])
 clustered["centroid_lon"] = clustered["centroid_lon"].fillna(clustered["longitude"])
+clustered["detection_count"] = clustered["detection_count"].fillna(1).astype(int)
 
 cluster_dir = data_dir/'Cluster'
+cluster_dir.mkdir(parents=True, exist_ok=True)
 clustered.to_csv(cluster_dir/'Clusters.csv',index=False)

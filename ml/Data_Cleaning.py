@@ -20,3 +20,4 @@ fires = fires.drop(columns=['acq_date','acq_time','instrument','satellite'])
 
 fires.to_csv(data_dir/'chatisgarh_clean.csv',index=False)
 
+

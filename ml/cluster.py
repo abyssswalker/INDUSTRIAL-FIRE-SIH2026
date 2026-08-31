@@ -41,7 +41,7 @@ print(fires["cluster_id"].value_counts().head(10))
 
 
 cluster_summary = (
-    fires
+    fires[fires["cluster_id"] != -1]
     .groupby("cluster_id")
     .agg(
         detection_count=("cluster_id", "size"),
@@ -54,7 +54,6 @@ cluster_summary = (
 print(cluster_summary.head(10))
 
 
-
 clustered = fires.copy()
 
 
@@ -63,6 +62,8 @@ clustered = clustered.merge(
     on="cluster_id",
     how="left",
 )
+clustered["centroid_lat"] = clustered["centroid_lat"].fillna(clustered["latitude"])
+clustered["centroid_lon"] = clustered["centroid_lon"].fillna(clustered["longitude"])
 
 cluster_dir = data_dir/'Cluster'
 clustered.to_csv(cluster_dir/'Clusters.csv',index=False)

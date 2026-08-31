@@ -10,7 +10,7 @@ fires = pd.read_csv(data_dir / "chatisgarh_clean.csv")
 
 #  coordinate conversion logic
 
-transformer = Transformer.from_crs("EPSG:4326", "EPSG:32645", always_xy=True)
+transformer = Transformer.from_crs("EPSG:4326", "EPSG:32644", always_xy=True)
 
 fires["x_m"], fires["y_m"] = transformer.transform(fires["longitude"].values, fires["latitude"].values)
 

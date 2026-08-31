@@ -59,7 +59,7 @@ clustered = fires.copy()
 
 
 clustered = clustered.merge(
-    cluster_summary[["centroid_lat", "centroid_lon", "detection_count"]],
+    cluster_summary[["cluster_id", "centroid_lat", "centroid_lon", "detection_count"]],
     on="cluster_id",
     how="left",
 )

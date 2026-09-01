@@ -72,6 +72,7 @@ def clustering():
  cluster_dir = data_dir/'Cluster'
  cluster_dir.mkdir(parents=True, exist_ok=True)
  clustered.to_csv(cluster_dir/'Clusters.csv',index=False)
+ clustered[['cluster_id','centroid_lat','centroid_lon']].to_csv(data_dir/'osm'/'cluster_csv_for_osm.csv',index =False)
 
 
 if __name__ == '__main__':

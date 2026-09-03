@@ -1,0 +1,132 @@
+{%extends base.html%}
+{%block title%}
+Map
+{%endblock%}
+{%block content%}
+
+    <header class="topbar">
+        <div>
+            <h1>Industrial Fire Detection</h1>
+            <p>Hotspot monitoring dashboard</p>
+        </div>
+
+        <div class="connection-status">
+            <span id="connectionDot"></span>
+            <span id="connectionText">Demo data</span>
+        </div>
+    </header>
+
+    <main class="dashboard">
+
+        <section class="stats-bar">
+            <div class="stat-card">
+                <span class="stat-label">Total hotspots</span>
+                <strong id="totalCount">0</strong>
+            </div>
+
+            <div class="stat-card industrial-stat">
+                <span class="stat-label">Industrial</span>
+                <strong id="industrialCount">0</strong>
+            </div>
+
+            <div class="stat-card wildfire-stat">
+                <span class="stat-label">Wildfire</span>
+                <strong id="wildfireCount">0</strong>
+            </div>
+
+            <div class="stat-card uncertain-stat">
+                <span class="stat-label">Uncertain</span>
+                <strong id="uncertainCount">0</strong>
+            </div>
+        </section>
+
+        <section class="toolbar">
+            <label for="classificationFilter">
+                Classification
+            </label>
+
+            <select id="classificationFilter">
+                <option value="all">All classifications</option>
+                <option value="industrial">Industrial</option>
+                <option value="wildfire">Wildfire</option>
+                <option value="uncertain">Uncertain</option>
+            </select>
+
+            <label for="searchInput">
+                Search
+            </label>
+
+            <input
+                id="searchInput"
+                type="search"
+                placeholder="Search classification or OSM site"
+            >
+
+            <button id="resetButton" type="button">
+                Reset
+            </button>
+
+            <span id="resultCount" class="result-count"></span>
+        </section>
+
+        <section class="content-grid">
+
+            <div class="map-wrapper">
+                <div id="map"></div>
+
+                <div class="map-legend">
+                    <h3>Legend</h3>
+
+                    <div class="legend-item">
+                        <span class="legend-dot industrial-dot"></span>
+                        <span>Industrial</span>
+                    </div>
+
+                    <div class="legend-item">
+                        <span class="legend-dot wildfire-dot"></span>
+                        <span>Wildfire</span>
+                    </div>
+
+                    <div class="legend-item">
+                        <span class="legend-dot uncertain-dot"></span>
+                        <span>Uncertain</span>
+                    </div>
+                </div>
+            </div>
+
+            <aside id="detailPanel" class="detail-panel">
+                <div class="empty-detail">
+                    <div class="empty-icon">◎</div>
+                    <h2>Select a hotspot</h2>
+                    <p>
+                        Click a marker on the map to see its details.
+                    </p>
+                </div>
+            </aside>
+
+        </section>
+    </main>
+
+    <footer class="footer">
+        <span>
+            Data visualisation prototype for SIH Industrial Fire Detection
+        </span>
+
+        <a
+            href="https://www.openstreetmap.org/copyright"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            Map data © OpenStreetMap contributors
+        </a>
+    </footer>
+
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""
+    ></script>
+
+    <script src="app.js"></script>
+
+{%endblock%}

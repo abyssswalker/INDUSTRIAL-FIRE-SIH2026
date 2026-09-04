@@ -1,9 +1,12 @@
-from fastapi import FastAPI
-
-
-
-
+from fastapi import FastAPI , HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pathlib import Path
+import pandas as pd
+
+
+main_dir = Path(__file__).resolve().parent.parent
+data_dir = main_dir /'DataBase'
+cluster_dir = data_dir /'Cluster'
 
 app = FastAPI()
 
@@ -16,33 +19,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Fake data — jaisa real data baad mein aayega
-fake_hotspots = [
-    {
-        "id": "hs_001",
-        "latitude": 21.1458,
-        "longitude": 79.0882,
-        "location_name": "Nagpur Industrial Belt",
-        "classification": "Industrial",       # ya "Transient"
-        "confidence": 0.92,
-        "recurrence_count": 34,
-        "nearest_osm_feature": "Steel Plant, Nagpur",
-        "distance_to_osm_m": 340,
-        "last_detected": "2026-08-20"
-    },
-    {
-        "id": "hs_002",
-        "latitude": 21.2000,
-        "longitude": 79.1200,
-        "location_name": "Forest Belt, Seoni",
-        "classification": "Transient",
-        "confidence": 0.78,
-        "recurrence_count": 2,
-        "nearest_osm_feature": None,
-        "distance_to_osm_m": None,
-        "last_detected": "2026-07-15"
-    }
-]
+# Real data
+df = pd.read_csv(cluster_dir/'cluster_labeled.csv')
+
+hotspots = []
+for _, row in df.iterrows():
+    hotspots.append(
+        {
+            "id": str(row["cluster_id"]),
+            "lat": row["centroid_lat"],
+            "lon": row["centroid_lon"],
+            "classification": row["label"],  # industrial / wildfire / uncertain
+            "confidence": None,  # not available until XGBoost stretch goal
+            "recurrence_count": int(row["detection_count"]),
+            "frp_variance": row["frp_cv"],
+            "day_night_ratio": row["daynight_ratio"],
+            "nearest_industrial_type": (
+                row["nearest_industrial_type"]
+                if pd.notna(row["nearest_industrial_type"])
+                else None
+            ),
+            "nearest_industrial_distance_m": (
+                row["nearest_industrial_distance_m"]
+                if pd.notna(row["nearest_industrial_distance_m"])
+                else None
+            ),
+        }
+    )
+
 
 @app.get("/hello")
 def say_hello():
@@ -50,21 +54,29 @@ def say_hello():
 
 @app.get("/hotspots")
 def get_hotspots():
-    return fake_hotspots
+    return hotspots
+
 
 @app.get("/hotspots/{hotspot_id}")
 def get_hotspot_detail(hotspot_id: str):
-    for spot in fake_hotspots:
+    for spot in hotspots:
         if spot["id"] == hotspot_id:
             return spot
-    return {"error": "Hotspot not found"}
+    raise HTTPException(status_code=404, detail="Hotspot not found")
+
 
 @app.get("/stats")
 def get_stats():
-    industrial_count = sum(1 for h in fake_hotspots if h["classification"] == "Industrial")
-    transient_count = sum(1 for h in fake_hotspots if h["classification"] == "Transient")
+    industrial_count = sum(1 for h in hotspots if h["classification"] == "industrial")
+    wildfire_count = sum(1 for h in hotspots if h["classification"] == "wildfire")
+    uncertain_count = sum(1 for h in hotspots if h["classification"] == "uncertain")
     return {
-        "total_hotspots": len(fake_hotspots),
+        "total_hotspots": len(hotspots),
         "industrial_count": industrial_count,
-        "transient_count": transient_count
+        "wildfire_count": wildfire_count,
+        "uncertain_count": uncertain_count,
     }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -19,7 +19,7 @@ import pandas as pd
 main_dir = Path(__file__).resolve().parent
 data_dir = main_dir.parent / "DataBase"
 
-input_path = data_dir / "Cluster" / "Clusters_with_industrial.csv"
+input_path = data_dir / "Cluster" / "Clusters_with_real_industrial.csv"
 output_path = data_dir / "Cluster" / "cluster_features_step_a.csv"
 
 df = pd.read_csv(input_path)

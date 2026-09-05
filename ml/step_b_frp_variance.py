@@ -22,7 +22,7 @@ import pandas as pd
 main_dir = Path(__file__).resolve().parent
 data_dir = main_dir.parent / "DataBase"
 
-raw_path = data_dir / "Cluster" / "Clusters_with_industrial.csv"
+raw_path = data_dir / "Cluster" / "Clusters_with_real_industrial.csv"
 step_a_path = data_dir / "Cluster" / "cluster_features_step_a.csv"
 output_path = data_dir / "Cluster" / "cluster_features_step_b.csv"
 

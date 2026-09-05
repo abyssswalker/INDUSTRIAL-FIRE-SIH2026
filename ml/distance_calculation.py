@@ -57,6 +57,13 @@ def find_nearest(cluster_lat, cluster_lon, osm_features):
     return best_name, best_distance, best_lat, best_lon
 
 
+def count_within_radius(cluster_lat, cluster_lon, osm_features, radius_m):
+    return sum(
+        haversine(cluster_lat, cluster_lon, feature["lat"], feature["lon"]) <= radius_m
+        for feature in osm_features
+    )
+
+
 def match_osm_distances():
     main_dir = Path(__file__).resolve().parent
     data_dir = main_dir.parent / "DataBase"
@@ -73,6 +80,7 @@ def match_osm_distances():
     nearest_distances = []
     nearest_lats = []
     nearest_lons = []
+    osm_counts_within_5km = []
 
 
     for _, row in clusters.iterrows():
@@ -83,12 +91,20 @@ def match_osm_distances():
         nearest_distances.append(round(distance, 2))
         nearest_lats.append(lat)
         nearest_lons.append(lon)
+        osm_counts_within_5km.append(
+            count_within_radius(
+                row["centroid_lat"], row["centroid_lon"], osm_features, 5000
+            )
+        )
 
     clusters["nearest_osm_feature"] = nearest_names
     clusters["distance_to_osm_m"] = nearest_distances
     clusters["nearest_osm_lat"] = nearest_lats
     clusters["nearest_osm_lon"] = nearest_lons
+    clusters["osm_count_within_5km"] = osm_counts_within_5km
     
+    
+    clusters = clusters.drop_duplicates()
 
     output_path = osm_dir / "cluster_osm_distances.csv"
     clusters.to_csv(output_path, index=False)

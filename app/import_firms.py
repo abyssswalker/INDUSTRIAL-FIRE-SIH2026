@@ -1,105 +1,121 @@
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
-from sqlalchemy import text
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from app.database import SessionLocal
+from app.models import ClusterSummary
 
-def clean_value(value):
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+EXPECTED_COLUMNS = [
+    "cluster_id",
+    "detection_count",
+    "first_seen",
+    "last_seen",
+    "centroid_lat",
+    "centroid_lon",
+    "nearest_industrial_distance_m",
+    "nearest_industrial_type",
+    "months_active",
+    "recurrence_rate",
+    "frp_mean",
+    "frp_std",
+    "frp_cv",
+    "day_count",
+    "night_count",
+    "daynight_ratio",
+    "industrial_score",
+    "wildfire_score",
+    "label",
+]
+
+
+def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df.columns = [str(c).strip() for c in df.columns]
+    return df
+
+
+def parse_dt(value):
     if pd.isna(value):
         return None
-    return value
+    return pd.to_datetime(value)
 
-def parse_detected_at(row: pd.Series) -> datetime:
-    date_value = str(row.get("acq_date"))
-    time_value = str(row.get("acq_time")).zfill(4)
-    return datetime.strptime(
-        f"{date_value} {time_value}",
-        "%Y-%m-%d %H%M",
-    ).replace(tzinfo=timezone.utc)
 
-def import_firms_csv(csv_path: str) -> int:
+def import_clusters_csv(csv_path: str) -> int:
     path = Path(csv_path)
+    if not path.is_absolute():
+        path = (BASE_DIR / path).resolve()
+
     if not path.exists():
-        raise FileNotFoundError(f"FIRMS CSV was not found: {path}")
+        raise FileNotFoundError(f"CSV file was not found: {path}")
 
-    dataframe = pd.read_csv(path)
-    required_columns = {"latitude", "longitude", "acq_date", "acq_time", "frp", "daynight"}
-    missing = required_columns.difference(dataframe.columns)
+    df = pd.read_csv(path, low_memory=False)
+    df = normalize_columns(df)
+
+    missing = [c for c in EXPECTED_COLUMNS if c not in df.columns]
     if missing:
-        raise ValueError(f"Missing FIRMS columns: {sorted(missing)}")
+        raise ValueError(f"Missing columns in CSV: {missing}")
 
-    imported = 0
+    rows = []
+    for _, row in df.iterrows():
+        rows.append({
+            "cluster_id": int(row["cluster_id"]),
+            "detection_count": None if pd.isna(row["detection_count"]) else int(row["detection_count"]),
+            "first_seen": parse_dt(row["first_seen"]),
+            "last_seen": parse_dt(row["last_seen"]),
+            "centroid_lat": None if pd.isna(row["centroid_lat"]) else float(row["centroid_lat"]),
+            "centroid_lon": None if pd.isna(row["centroid_lon"]) else float(row["centroid_lon"]),
+            "nearest_industrial_distance_m": None if pd.isna(row["nearest_industrial_distance_m"]) else float(row["nearest_industrial_distance_m"]),
+            "nearest_industrial_type": None if pd.isna(row["nearest_industrial_type"]) else str(row["nearest_industrial_type"]),
+            "months_active": None if pd.isna(row["months_active"]) else float(row["months_active"]),
+            "recurrence_rate": None if pd.isna(row["recurrence_rate"]) else float(row["recurrence_rate"]),
+            "frp_mean": None if pd.isna(row["frp_mean"]) else float(row["frp_mean"]),
+            "frp_std": None if pd.isna(row["frp_std"]) else float(row["frp_std"]),
+            "frp_cv": None if pd.isna(row["frp_cv"]) else float(row["frp_cv"]),
+            "day_count": None if pd.isna(row["day_count"]) else int(row["day_count"]),
+            "night_count": None if pd.isna(row["night_count"]) else int(row["night_count"]),
+            "daynight_ratio": None if pd.isna(row["daynight_ratio"]) else float(row["daynight_ratio"]),
+            "industrial_score": None if pd.isna(row["industrial_score"]) else float(row["industrial_score"]),
+            "wildfire_score": None if pd.isna(row["wildfire_score"]) else float(row["wildfire_score"]),
+            "label": None if pd.isna(row["label"]) else str(row["label"]),
+        })
 
     with SessionLocal() as db:
-        for _, row in dataframe.iterrows():
-            latitude = float(row["latitude"])
-            longitude = float(row["longitude"])
-            detected_at = parse_detected_at(row)
-
-            firms_id = clean_value(row.get("id"))
-            if firms_id is None:
-                firms_id = f"{latitude:.6f}_{longitude:.6f}_{detected_at.isoformat()}"
-
-            values = {
-                "firms_id": str(firms_id),
-                "latitude": latitude,
-                "longitude": longitude,
-                "detected_at": detected_at,
-                "acq_date": detected_at,
-                "satellite": clean_value(row.get("satellite")),
-                "instrument": clean_value(row.get("instrument")),
-                "source": clean_value(row.get("source")),
-                "frp": clean_value(row.get("frp")),
-                "confidence": clean_value(row.get("confidence")),
-                "day_night": clean_value(row.get("daynight")),
-                "brightness_ti4": clean_value(row.get("bright_ti4")),
-                "brightness_ti5": clean_value(row.get("bright_ti5")),
-            }
-
-            statement = text(
-                """
-                INSERT INTO firms_detections (
-                    firms_id, latitude, longitude, detected_at, acq_date,
-                    satellite, instrument, source, frp, confidence,
-                    day_night, brightness_ti4, brightness_ti5, geom
-                )
-                VALUES (
-                    :firms_id, :latitude, :longitude, :detected_at, :acq_date,
-                    :satellite, :instrument, :source, :frp, :confidence,
-                    :day_night, :brightness_ti4, :brightness_ti5,
-                    ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography
-                )
-                ON CONFLICT (firms_id)
-                DO UPDATE SET
-                    latitude = EXCLUDED.latitude,
-                    longitude = EXCLUDED.longitude,
-                    detected_at = EXCLUDED.detected_at,
-                    acq_date = EXCLUDED.acq_date,
-                    satellite = EXCLUDED.satellite,
-                    instrument = EXCLUDED.instrument,
-                    source = EXCLUDED.source,
-                    frp = EXCLUDED.frp,
-                    confidence = EXCLUDED.confidence,
-                    day_night = EXCLUDED.day_night,
-                    brightness_ti4 = EXCLUDED.brightness_ti4,
-                    brightness_ti5 = EXCLUDED.brightness_ti5,
-                    geom = EXCLUDED.geom
-                """
-            )
-
-            db.execute(statement, values)
-            imported += 1
-
+        stmt = sqlite_insert(ClusterSummary).values(rows)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["cluster_id"],
+            set_={
+                "detection_count": stmt.excluded.detection_count,
+                "first_seen": stmt.excluded.first_seen,
+                "last_seen": stmt.excluded.last_seen,
+                "centroid_lat": stmt.excluded.centroid_lat,
+                "centroid_lon": stmt.excluded.centroid_lon,
+                "nearest_industrial_distance_m": stmt.excluded.nearest_industrial_distance_m,
+                "nearest_industrial_type": stmt.excluded.nearest_industrial_type,
+                "months_active": stmt.excluded.months_active,
+                "recurrence_rate": stmt.excluded.recurrence_rate,
+                "frp_mean": stmt.excluded.frp_mean,
+                "frp_std": stmt.excluded.frp_std,
+                "frp_cv": stmt.excluded.frp_cv,
+                "day_count": stmt.excluded.day_count,
+                "night_count": stmt.excluded.night_count,
+                "daynight_ratio": stmt.excluded.daynight_ratio,
+                "industrial_score": stmt.excluded.industrial_score,
+                "wildfire_score": stmt.excluded.wildfire_score,
+                "label": stmt.excluded.label,
+            },
+        )
+        db.execute(stmt)
         db.commit()
 
-    return imported
+    return len(rows)
+
 
 if __name__ == "__main__":
-    csv_file = sys.argv[1] if len(sys.argv) > 1 else "data/firms_latest.csv"
-    count = import_firms_csv(csv_file)
-    print(f"Imported or updated {count} FIRMS detections.")
+    csv_file = sys.argv[1] if len(sys.argv) > 1 else "DataBase/Cluster/cluster_labeled_v2.csv"
+    print(f"Imported or updated {import_clusters_csv(csv_file)} rows.")

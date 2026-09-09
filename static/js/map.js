@@ -1,231 +1,94 @@
-const CHHATTISGARH_CENTER = [21.2787, 81.8661];
-const INITIAL_ZOOM = 7;
-
-const CLASSIFICATION_COLORS = {
-    industrial: "#dc2626",
-    wildfire: "#f97316",
-    uncertain: "#ca8a04",
-};
-
-const CLASSIFICATION_LABELS = {
-    industrial: "Industrial",
-    wildfire: "Wildfire",
-    uncertain: "Uncertain",
-};
-
-let map;
-let markerLayer;
-let allHotspots = [];
-let visibleHotspots = [];
-
 document.addEventListener("DOMContentLoaded", async () => {
-    initializeMap();
-    initializeControls();
-    await loadHotspots();
-});
+  const mapContainer = document.getElementById("map");
+  const loadingEl = document.getElementById("loading");
 
-function initializeMap() {
-    map = L.map("map", { zoomControl: true, preferCanvas: true }).setView(CHHATTISGARH_CENTER, INITIAL_ZOOM);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
-    }).addTo(map);
-    markerLayer = L.layerGroup().addTo(map);
-}
+  // Initialize map centered on Chhattisgarh
+  const map = L.map("map", {
+    center: [21.5, 82.0],
+    zoom: 7,
+    zoomControl: true,
+  });
 
-function initializeControls() {
-    document.getElementById("classificationFilter").addEventListener("change", applyFilters);
-    document.getElementById("searchInput").addEventListener("input", applyFilters);
-    document.getElementById("resetButton").addEventListener("click", resetFilters);
-}
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  }).addTo(map);
 
-async function loadHotspots() {
-    try {
-        const response = await fetch("/hotspots");
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-        allHotspots = Array.isArray(data) ? data : [];
-        visibleHotspots = [...allHotspots];
-        updateDashboard(visibleHotspots);
-        renderMarkers(visibleHotspots);
-        showLiveStatus();
-        if (visibleHotspots.length > 0) {
-            map.fitBounds(visibleHotspots.map(h => [h.centroid_lat, h.centroid_lon]), { padding: [35, 35], maxZoom: 8 });
-        }
-    } catch (error) {
-        console.error("Failed to load hotspots:", error);
-        showErrorStatus();
+  const hotspotsUrl = window.APP_CONFIG?.hotspotsUrl || "/hotspots";
+
+  try {
+    const res = await fetch(hotspotsUrl);
+    if (!res.ok) {
+      throw new Error(`Failed to load hotspots: ${res.status} ${res.statusText}`);
     }
-}
 
-function applyFilters() {
-    const classification = document.getElementById("classificationFilter").value;
-    const searchTerm = document.getElementById("searchInput").value.trim().toLowerCase();
+    const clusters = await res.json();
 
-    visibleHotspots = allHotspots.filter((hotspot) => {
-        const classificationMatches = classification === "all" || hotspot.classification === classification;
-        const searchableText = [
-            hotspot.classification,
-            hotspot.nearest_industrial_name,
-            hotspot.nearest_industrial_type,
-            hotspot.nearest_osm_id,
-            String(hotspot.cluster_id),
-        ].filter(Boolean).join(" ").toLowerCase();
-        const searchMatches = !searchTerm || searchableText.includes(searchTerm);
-        return classificationMatches && searchMatches;
+    if (!Array.isArray(clusters) || clusters.length === 0) {
+      loadingEl.textContent = "No hotspots found in the database.";
+      return;
+    }
+
+    // Remove loading overlay once we have data
+    loadingEl.remove();
+
+    const bounds = [];
+
+    clusters.forEach((cluster) => {
+      const lat = cluster.centroid_lat;
+      const lon = cluster.centroid_lon;
+
+      if (lat == null || lon == null) {
+        return;
+      }
+
+      const marker = L.marker([lat, lon]).addTo(map);
+      bounds.push([lat, lon]);
+
+      const clusterId = cluster.cluster_id ?? "N/A";
+      const label = cluster.label ?? "uncertain";
+      const detections = cluster.detection_count ?? "N/A";
+      const distanceM = cluster.nearest_industrial_distance_m;
+      const industrialType = cluster.nearest_industrial_type;
+      const frpMean = cluster.frp_mean;
+      const recurrence = cluster.recurrence_rate;
+      const industrialScore = cluster.industrial_score;
+      const wildfireScore = cluster.wildfire_score;
+
+      let popupLines = [
+        `<b>Cluster ${clusterId}</b>`,
+        `<b>Label:</b> ${label}`,
+        `<b>Detections:</b> ${detections}`,
+      ];
+
+      if (distanceM != null) {
+        popupLines.push(`<b>Nearest industrial distance:</b> ${distanceM.toFixed(1)} m`);
+      }
+      if (industrialType) {
+        popupLines.push(`<b>Nearest industrial type:</b> ${industrialType}`);
+      }
+      if (frpMean != null) {
+        popupLines.push(`<b>FRP mean:</b> ${frpMean.toFixed(2)}`);
+      }
+      if (recurrence != null) {
+        popupLines.push(`<b>Recurrence rate:</b> ${recurrence.toFixed(2)}`);
+      }
+      if (industrialScore != null || wildfireScore != null) {
+        const ind = industrialScore != null ? industrialScore.toFixed(2) : "N/A";
+        const wild = wildfireScore != null ? wildfireScore.toFixed(2) : "N/A";
+        popupLines.push(`<b>Industrial score:</b> ${ind}`);
+        popupLines.push(`<b>Wildfire score:</b> ${wild}`);
+      }
+
+      const popupContent = popupLines.join("<br>");
+      marker.bindPopup(popupContent);
     });
 
-    updateDashboard(visibleHotspots);
-    renderMarkers(visibleHotspots);
-}
-
-function resetFilters() {
-    document.getElementById("classificationFilter").value = "all";
-    document.getElementById("searchInput").value = "";
-    visibleHotspots = [...allHotspots];
-    updateDashboard(visibleHotspots);
-    renderMarkers(visibleHotspots);
-}
-
-function renderMarkers(hotspots) {
-    markerLayer.clearLayers();
-    hotspots.forEach((hotspot) => createHotspotMarker(hotspot).addTo(markerLayer));
-    document.getElementById("resultCount").textContent = `${hotspots.length} hotspot${hotspots.length === 1 ? "" : "s"} shown`;
-}
-
-function createHotspotMarker(hotspot) {
-    const color = CLASSIFICATION_COLORS[hotspot.classification] || CLASSIFICATION_COLORS.uncertain;
-    const marker = L.circleMarker([hotspot.centroid_lat, hotspot.centroid_lon], {
-        radius: getMarkerRadius(hotspot),
-        color: "#ffffff",
-        weight: 2,
-        fillColor: color,
-        fillOpacity: 0.9,
-    });
-    marker.bindPopup(createPopupContent(hotspot), { maxWidth: 280 });
-    marker.on("click", () => showHotspotDetails(hotspot));
-    return marker;
-}
-
-function getMarkerRadius(hotspot) {
-    const count = Number(hotspot.detection_count) || 1;
-    return Math.min(15, Math.max(7, 6 + Math.sqrt(count)));
-}
-
-function createPopupContent(hotspot) {
-    const label = CLASSIFICATION_LABELS[hotspot.classification] || "Uncertain";
-    const color = CLASSIFICATION_COLORS[hotspot.classification] || CLASSIFICATION_COLORS.uncertain;
-    return `
-        <div class="popup-title">Cluster #${escapeHtml(hotspot.cluster_id)}</div>
-        <div class="popup-classification" style="color: ${color}">${escapeHtml(label)}</div>
-        <div class="popup-row">Detections: ${formatNumber(hotspot.detection_count)}</div>
-        <div class="popup-row">FRP mean: ${formatNumber(hotspot.frp_mean)} MW</div>
-        <div class="popup-row">Last seen: ${formatDate(hotspot.last_seen)}</div>
-    `;
-}
-
-function showHotspotDetails(hotspot) {
-    const detailPanel = document.getElementById("detailPanel");
-    const classification = hotspot.classification || "uncertain";
-    const label = CLASSIFICATION_LABELS[classification] || "Uncertain";
-    const modelConfidence = hotspot.confidence == null ? "Not available" : `${(Number(hotspot.confidence) * 100).toFixed(1)}%`;
-    const osmName = hotspot.nearest_industrial_name || "No joined OSM name";
-    const osmType = hotspot.nearest_industrial_type || "Not available";
-    const distance = hotspot.nearest_industrial_distance_m == null ? "Not available" : `${formatNumber(hotspot.nearest_industrial_distance_m)} m`;
-
-    detailPanel.innerHTML = `
-        <div class="detail-content">
-            <div class="detail-header">
-                <div>
-                    <h2>Cluster #${escapeHtml(hotspot.cluster_id)}</h2>
-                    <p>Last seen ${formatDate(hotspot.last_seen)}</p>
-                </div>
-                <span class="classification-badge badge-${classification}">${escapeHtml(label)}</span>
-            </div>
-
-            <div class="detail-section">
-                <h3>Classification</h3>
-                ${detailRow("Label", label)}
-                ${detailRow("Model confidence", modelConfidence)}
-                ${detailRow("Classifier version", hotspot.classifier_version || "Not available")}
-            </div>
-
-            <div class="detail-section">
-                <h3>Location</h3>
-                ${detailRow("Latitude", formatNumber(hotspot.centroid_lat))}
-                ${detailRow("Longitude", formatNumber(hotspot.centroid_lon))}
-                ${detailRow("OSM ID", hotspot.nearest_osm_id || "Not available")}
-                ${detailRow("OSM name", osmName)}
-                ${detailRow("OSM type", osmType)}
-                ${detailRow("Distance to industrial site", distance)}
-            </div>
-
-            <div class="detail-section">
-                <h3>Detection statistics</h3>
-                ${detailRow("Detection count", formatNumber(hotspot.detection_count))}
-                ${detailRow("First seen", formatDate(hotspot.first_seen))}
-                ${detailRow("Last seen", formatDate(hotspot.last_seen))}
-                ${detailRow("Months active", formatNumber(hotspot.months_active))}
-                ${detailRow("Recurrence rate", formatNumber(hotspot.recurrence_rate))}
-            </div>
-
-            <div class="detail-section">
-                <h3>Fire measurements</h3>
-                ${detailRow("FRP mean", `${formatNumber(hotspot.frp_mean)} MW`)}
-                ${detailRow("FRP standard deviation", `${formatNumber(hotspot.frp_std)} MW`)}
-                ${detailRow("FRP coefficient of variation", formatNumber(hotspot.frp_cv))}
-                ${detailRow("Day detections", formatNumber(hotspot.day_count))}
-                ${detailRow("Night detections", formatNumber(hotspot.night_count))}
-                ${detailRow("Day/night ratio", formatNumber(hotspot.daynight_ratio))}
-            </div>
-        </div>
-    `;
-}
-
-function detailRow(label, value) {
-    return `<div class="detail-row"><span>${escapeHtml(label)}</span><span>${escapeHtml(value)}</span></div>`;
-}
-
-function updateDashboard(hotspots) {
-    const industrial = hotspots.filter(h => h.classification === "industrial").length;
-    const wildfire = hotspots.filter(h => h.classification === "wildfire").length;
-    const uncertain = hotspots.filter(h => h.classification === "uncertain").length;
-    document.getElementById("totalCount").textContent = hotspots.length;
-    document.getElementById("industrialCount").textContent = industrial;
-    document.getElementById("wildfireCount").textContent = wildfire;
-    document.getElementById("uncertainCount").textContent = uncertain;
-}
-
-function showLiveStatus() {
-    document.getElementById("connectionDot").style.background = "#22c55e";
-    document.getElementById("connectionText").textContent = "Live database connected";
-}
-
-function showErrorStatus() {
-    document.getElementById("connectionDot").style.background = "#ef4444";
-    document.getElementById("connectionText").textContent = "API unavailable";
-}
-
-function formatNumber(value) {
-    if (value === null || value === undefined || value === "") return "Not available";
-    const number = Number(value);
-    if (Number.isNaN(number)) return "Not available";
-    return number.toLocaleString("en-IN", { maximumFractionDigits: 4 });
-}
-
-function formatDate(value) {
-    if (!value) return "Not available";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "Not available";
-    return date.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
-}
-
-function escapeHtml(value) {
-    if (value === null || value === undefined) return "";
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
+    if (bounds.length > 0) {
+      map.fitBounds(bounds, { padding: [50, 50] });
+    }
+  } catch (err) {
+    console.error(err);
+    loadingEl.textContent = "Failed to load hotspots. Check console for details.";
+  }
+});

@@ -39,6 +39,7 @@ agg = df.groupby("cluster_id").agg(
     centroid_lon=("centroid_lon", "first"),
     nearest_industrial_distance_m=("nearest_industrial_distance_m", "first"),
     nearest_industrial_type=("nearest_industrial_type", "first"),
+    industrial_count_5km=("industrial_count_5km", "first"),
 ).reset_index()
 
 # months_active: span between first and last detection, in months

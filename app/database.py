@@ -6,7 +6,11 @@ from app.config import DATABASE_URL
 class Base(DeclarativeBase):
     pass
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True, future=True)
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
+    future=True,
+)
 
 SessionLocal = sessionmaker(
     bind=engine,

@@ -64,16 +64,16 @@ def count_within_radius(cluster_lat, cluster_lon, osm_features, radius_m):
     )
 
 
-def match_osm_distances():
+def match_osm_distances(fires):
     main_dir = Path(__file__).resolve().parent
     data_dir = main_dir.parent / "DataBase"
     osm_dir = data_dir / "osm"
 
-    clusters = pd.read_csv(osm_dir / "cluster_csv_for_osm.csv")
+    df = fires 
     osm_features = load_osm_features(osm_dir / "osm_chatisgarh.geojson")
 
     print(
-        f"Matching {len(clusters)} clusters against {len(osm_features)} OSM features..."
+        f"Matching {len(df)} df against {len(osm_features)} OSM features..."
     )
 
     nearest_names = []
@@ -83,7 +83,7 @@ def match_osm_distances():
     osm_counts_within_5km = []
 
 
-    for _, row in clusters.iterrows():
+    for _, row in df.iterrows():
         name, distance, lat, lon = find_nearest(
             row["centroid_lat"], row["centroid_lon"], osm_features
         )
@@ -97,20 +97,19 @@ def match_osm_distances():
             )
         )
 
-    clusters["nearest_osm_feature"] = nearest_names
-    clusters["distance_to_osm_m"] = nearest_distances
-    clusters["nearest_osm_lat"] = nearest_lats
-    clusters["nearest_osm_lon"] = nearest_lons
-    clusters["osm_count_within_5km"] = osm_counts_within_5km
+    df["nearest_osm_feature"] = nearest_names
+    df["distance_to_osm_m"] = nearest_distances
+    df["nearest_osm_lat"] = nearest_lats
+    df["nearest_osm_lon"] = nearest_lons
+    df["osm_count_within_5km"] = osm_counts_within_5km
     
     
-    clusters = clusters.drop_duplicates()
+    df = df.drop_duplicates()
 
-    output_path = osm_dir / "cluster_osm_distances.csv"
-    clusters.to_csv(output_path, index=False)
+    
 
-    print(f"Saved to {output_path}")
-    print(clusters.head(10))
+    print(df.head(10))
+    return df
 
 
 if __name__ == "__main__":

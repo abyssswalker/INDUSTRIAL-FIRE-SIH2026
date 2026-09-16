@@ -1,24 +1,47 @@
-from sqlalchemy.orm import Session
+from typing import List, Tuple, Optional
+from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
+from geoalchemy2.shape import to_shape
 
-from app.models import ClusterSummary
+from app.models import Fire, IndustrialArea, ClusterBaseline
 
+async def list_current_fires(db: AsyncSession) -> List[Fire]:
+    stmt = select(Fire).order_by(Fire.acq_timestamptz.desc())
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
 
-def get_hotspots(db: Session):
-    return db.query(ClusterSummary).order_by(ClusterSummary.cluster_id).all()
+async def get_fires_near_industrial(
+    db: AsyncSession,
+    distance_m: float = 500,
+) -> List[Tuple[Fire, IndustrialArea]]:
+    stmt = select(Fire, IndustrialArea).where(
+        func.ST_DWithin(
+            func.geography(Fire.geom),
+            func.geography(IndustrialArea.geom),
+            distance_m,
+        )
+    )
+    result = await db.execute(stmt)
+    return list(result.all())
 
+async def compute_zscore_for_fire(
+    db: AsyncSession,
+    fire: Fire,
+) -> Optional[float]:
+    # Find nearest cluster by centroid
+    stmt = select(ClusterBaseline).order_by(
+        func.ST_Distance(
+            func.geography(fire.geom),
+            func.geography(ClusterBaseline.centroid_geom),
+        )
+    ).limit(1)
+    cluster = await db.scalar(stmt)
+    if not cluster or not cluster.frp_std or cluster.frp_std == 0:
+        return None
+    z = (float(fire.frp) - float(cluster.frp_mean)) / float(cluster.frp_std)
+    return z
 
-def get_hotspot(db: Session, cluster_id: int):
-    return db.query(ClusterSummary).filter(ClusterSummary.cluster_id == cluster_id).first()
-
-
-def get_stats(db: Session):
-    total = db.query(ClusterSummary).count()
-    industrial = db.query(ClusterSummary).filter(ClusterSummary.label == "industrial").count()
-    wildfire = db.query(ClusterSummary).filter(ClusterSummary.label == "wildfire").count()
-    uncertain = db.query(ClusterSummary).filter(ClusterSummary.label == "uncertain").count()
-    return {
-        "total_clusters": total,
-        "industrial_clusters": industrial,
-        "wildfire_clusters": wildfire,
-        "uncertain_clusters": uncertain,
-    }
+async def get_cluster_baselines(db: AsyncSession) -> List[ClusterBaseline]:
+    stmt = select(ClusterBaseline)
+    result = await db.execute(stmt)
+    return list(result.scalars().all())

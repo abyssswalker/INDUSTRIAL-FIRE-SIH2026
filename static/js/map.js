@@ -1,8 +1,4 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  const mapContainer = document.getElementById("map");
-  const loadingEl = document.getElementById("loading");
-
-  // Initialize map centered on Chhattisgarh
   const map = L.map("map", {
     center: [21.5, 82.0],
     zoom: 7,
@@ -14,81 +10,129 @@ document.addEventListener("DOMContentLoaded", async () => {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(map);
 
-  const hotspotsUrl = window.APP_CONFIG?.hotspotsUrl || "/hotspots";
+  const loadingEl = document.getElementById("loading");
+
+  const firesCurrentUrl = window.APP_CONFIG?.firesCurrentUrl || "/api/fires/current";
+  const firesNearIndustrialUrl =
+    window.APP_CONFIG?.firesNearIndustrialUrl || "/api/fires/industrial-nearby?distance_m=500";
+  const clustersUrl = window.APP_CONFIG?.clustersUrl || "/api/clusters";
+
+  const allBounds = [];
+
+  // Layers
+  const firesLayer = L.layerGroup().addTo(map);
+  const nearIndustrialLayer = L.layerGroup().addTo(map);
+  const clustersLayer = L.layerGroup().addTo(map);
+
+  function addMarker(layer, lat, lon, popupHtml, color = "#1f77b4") {
+    const marker = L.circleMarker([lat, lon], {
+      radius: 6,
+      color: "#333",
+      weight: 1,
+      fillColor: color,
+      fillOpacity: 0.9,
+    }).addTo(layer);
+
+    marker.bindPopup(popupHtml);
+    allBounds.push([lat, lon]);
+  }
 
   try {
-    const res = await fetch(hotspotsUrl);
-    if (!res.ok) {
-      throw new Error(`Failed to load hotspots: ${res.status} ${res.statusText}`);
-    }
+    // Load current fires
+    const resFires = await fetch(firesCurrentUrl);
+    if (!resFires.ok) throw new Error(`Fires current: ${resFires.status}`);
+    const firesGeo = await resFires.json();
 
-    const clusters = await res.json();
+    (firesGeo.features || []).forEach((f) => {
+      const coords = f.geometry?.coordinates;
+      if (!coords) return;
+      const [lon, lat] = coords;
 
-    if (!Array.isArray(clusters) || clusters.length === 0) {
-      loadingEl.textContent = "No hotspots found in the database.";
-      return;
-    }
+      const props = f.properties || {};
+      const firmsId = props.firms_id || "N/A";
+      const frp = props.frp != null ? props.frp.toFixed(2) : "N/A";
+      const acqTime = props.acq_time || "N/A";
 
-    // Remove loading overlay once we have data
-    loadingEl.remove();
+      const popup = `
+        <b>Fire</b><br>
+        <b>FIRMS ID:</b> ${firmsId}<br>
+        <b>FRP:</b> ${frp}<br>
+        <b>Acquisition time:</b> ${acqTime}
+      `;
 
-    const bounds = [];
-
-    clusters.forEach((cluster) => {
-      const lat = cluster.centroid_lat;
-      const lon = cluster.centroid_lon;
-
-      if (lat == null || lon == null) {
-        return;
-      }
-
-      const marker = L.marker([lat, lon]).addTo(map);
-      bounds.push([lat, lon]);
-
-      const clusterId = cluster.cluster_id ?? "N/A";
-      const label = cluster.label ?? "uncertain";
-      const detections = cluster.detection_count ?? "N/A";
-      const distanceM = cluster.nearest_industrial_distance_m;
-      const industrialType = cluster.nearest_industrial_type;
-      const frpMean = cluster.frp_mean;
-      const recurrence = cluster.recurrence_rate;
-      const industrialScore = cluster.industrial_score;
-      const wildfireScore = cluster.wildfire_score;
-
-      let popupLines = [
-        `<b>Cluster ${clusterId}</b>`,
-        `<b>Label:</b> ${label}`,
-        `<b>Detections:</b> ${detections}`,
-      ];
-
-      if (distanceM != null) {
-        popupLines.push(`<b>Nearest industrial distance:</b> ${distanceM.toFixed(1)} m`);
-      }
-      if (industrialType) {
-        popupLines.push(`<b>Nearest industrial type:</b> ${industrialType}`);
-      }
-      if (frpMean != null) {
-        popupLines.push(`<b>FRP mean:</b> ${frpMean.toFixed(2)}`);
-      }
-      if (recurrence != null) {
-        popupLines.push(`<b>Recurrence rate:</b> ${recurrence.toFixed(2)}`);
-      }
-      if (industrialScore != null || wildfireScore != null) {
-        const ind = industrialScore != null ? industrialScore.toFixed(2) : "N/A";
-        const wild = wildfireScore != null ? wildfireScore.toFixed(2) : "N/A";
-        popupLines.push(`<b>Industrial score:</b> ${ind}`);
-        popupLines.push(`<b>Wildfire score:</b> ${wild}`);
-      }
-
-      const popupContent = popupLines.join("<br>");
-      marker.bindPopup(popupContent);
+      addMarker(firesLayer, lat, lon, popup, "#1f77b4");
     });
 
-    if (bounds.length > 0) {
-      map.fitBounds(bounds, { padding: [50, 50] });
+    // Load fires near industrial
+    const resNear = await fetch(firesNearIndustrialUrl);
+    if (!resNear.ok) throw new Error(`Fires near industrial: ${resNear.status}`);
+    const nearGeo = await resNear.json();
+
+    (nearGeo.features || []).forEach((f) => {
+      const coords = f.geometry?.coordinates;
+      if (!coords) return;
+      const [lon, lat] = coords;
+
+      const props = f.properties || {};
+      const firmsId = props.firms_id || "N/A";
+      const frp = props.frp != null ? props.frp.toFixed(2) : "N/A";
+      const zscore = props.zscore != null ? props.zscore.toFixed(2) : "N/A";
+      const indName = props.industrial_name || "N/A";
+      const indType = props.industrial_type || "N/A";
+      const source = props.source || "N/A";
+
+      const popup = `
+        <b>Fire near industrial</b><br>
+        <b>FIRMS ID:</b> ${firmsId}<br>
+        <b>FRP:</b> ${frp}<br>
+        <b>Z‑score:</b> ${zscore}<br>
+        <b>Industrial:</b> ${indName} (${indType})<br>
+        <b>Source:</b> ${source}
+      `;
+
+      addMarker(nearIndustrialLayer, lat, lon, popup, "#d62728");
+    });
+
+    // Load clusters
+    const resClusters = await fetch(clustersUrl);
+    if (!resClusters.ok) throw new Error(`Clusters: ${resClusters.status}`);
+    const clusters = await resClusters.json();
+
+    (clusters || []).forEach((c) => {
+      const geom = c.geometry;
+      if (!geom || geom.type !== "Point") return;
+      const [lon, lat] = geom.coordinates;
+
+      const clusterId = c.cluster_id ?? "N/A";
+      const label = c.label ?? "uncertain";
+      const detections = c.detection_count ?? "N/A";
+      const frpMean = c.frp_mean != null ? c.frp_mean.toFixed(2) : "N/A";
+      const frpStd = c.frp_std != null ? c.frp_std.toFixed(2) : "N/A";
+      const indScore = c.industrial_score != null ? c.industrial_score.toFixed(2) : "N/A";
+      const wildScore = c.wildfire_score != null ? c.wildfire_score.toFixed(2) : "N/A";
+
+      const popup = `
+        <b>Cluster ${clusterId}</b><br>
+        <b>Label:</b> ${label}<br>
+        <b>Detections:</b> ${detections}<br>
+        <b>FRP mean:</b> ${frpMean}<br>
+        <b>FRP std:</b> ${frpStd}<br>
+        <b>Industrial score:</b> ${indScore}<br>
+        <b>Wildfire score:</b> ${wildScore}
+      `;
+
+      addMarker(clustersLayer, lat, lon, popup, "#2ca02c");
+    });
+
+    // Fit map to all markers
+    if (allBounds.length > 0) {
+      map.fitBounds(allBounds, { padding: [40, 40] });
     }
   } catch (err) {
     console.error(err);
-    loadingEl.textContent = "Failed to load hotspots. Check console for details.";
+    loadingEl.textContent = "Failed to load map data. Check console for details.";
+    return;
   }
+
+  loadingEl.remove();
 });

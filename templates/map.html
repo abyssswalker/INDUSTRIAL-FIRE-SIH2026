@@ -1,103 +1,95 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cluster Map</title>
 
-{% block title %}Map{% endblock %}
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
 
-{% block content %}
-<header class="topbar">
-    <div>
-        <h1>Industrial Fire Detection</h1>
-        <p>Hotspot monitoring dashboard</p>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    .page-wrapper {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .page-header {
+      padding: 12px 16px;
+      background: #0f172a;
+      color: #fff;
+    }
+
+    .page-header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .page-header p {
+      margin: 4px 0 0;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    #map {
+      flex: 1;
+      width: 100%;
+      min-height: 0;
+    }
+
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <div class="page-header">
+      <h1>Industrial Fire Cluster Map</h1>
+      <p>Viewing cluster hotspots and labels from the database</p>
     </div>
 
-    <div class="connection-status">
-        <span id="connectionDot"></span>
-        <span id="connectionText">Loading data</span>
+    <div id="map">
+      <div id="loading" class="loading-overlay">Loading hotspots…</div>
     </div>
-</header>
+  </div>
 
-<main class="dashboard">
-    <section class="stats-bar">
-        <div class="stat-card">
-            <span class="stat-label">Total hotspots</span>
-            <strong id="totalCount">0</strong>
-        </div>
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
 
-        <div class="stat-card industrial-stat">
-            <span class="stat-label">Industrial</span>
-            <strong id="industrialCount">0</strong>
-        </div>
+  <!-- Pass API URLs from FastAPI into JS -->
+  <script>
+    window.APP_CONFIG = {
+      hotspotsUrl: "{{ url_for('read_hotspots') }}",
+      statsUrl: "{{ url_for('read_stats') }}"
+    };
+  </script>
 
-        <div class="stat-card wildfire-stat">
-            <span class="stat-label">Wildfire</span>
-            <strong id="wildfireCount">0</strong>
-        </div>
-
-        <div class="stat-card uncertain-stat">
-            <span class="stat-label">Uncertain</span>
-            <strong id="uncertainCount">0</strong>
-        </div>
-    </section>
-
-    <section class="toolbar">
-        <label for="classificationFilter">Classification</label>
-
-        <select id="classificationFilter">
-            <option value="all">All classifications</option>
-            <option value="industrial">Industrial</option>
-            <option value="wildfire">Wildfire</option>
-            <option value="uncertain">Uncertain</option>
-        </select>
-
-        <label for="searchInput">Search</label>
-
-        <input id="searchInput" type="search" placeholder="Search classification or OSM site">
-
-        <button id="resetButton" type="button">Reset</button>
-
-        <span id="resultCount" class="result-count"></span>
-    </section>
-
-    <section class="content-grid">
-        <div class="map-wrapper">
-            <div id="map"></div>
-
-            <div class="map-legend">
-                <h3>Legend</h3>
-                <div class="legend-item">
-                    <span class="legend-dot industrial-dot"></span>
-                    <span>Industrial</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-dot wildfire-dot"></span>
-                    <span>Wildfire</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-dot uncertain-dot"></span>
-                    <span>Uncertain</span>
-                </div>
-            </div>
-        </div>
-
-        <aside id="detailPanel" class="detail-panel">
-            <div class="empty-detail">
-                <div class="empty-icon">◎</div>
-                <h2>Select a hotspot</h2>
-                <p>Click a marker on the map to see its details.</p>
-            </div>
-        </aside>
-    </section>
-</main>
-
-<footer class="footer">
-    <span>Data visualisation prototype for SIH Industrial Fire Detection</span>
-    <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
-        Map data © OpenStreetMap contributors
-    </a>
-</footer>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-        crossorigin=""></script>
-
-<script src="/static/app.js"></script>
-{% endblock %}
+  <!-- Your map logic -->
+  <script src="{{ url_for('static', path='js/map.js') }}"></script>
+</body>
+</html>

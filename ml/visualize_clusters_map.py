@@ -25,7 +25,7 @@ import folium
 main_dir = Path(__file__).resolve().parent
 data_dir = main_dir.parent / "DataBase"
 
-input_path = data_dir / "Cluster" / "cluster_labeled.csv"
+input_path = data_dir / "Cluster" / "cluster_labeled_v2.csv"
 output_path = data_dir / "Cluster" / "clusters_map.html"
 
 df = pd.read_csv(input_path)

@@ -1,105 +1,64 @@
-from __future__ import annotations
-
-import sys
-from datetime import datetime, timezone
-from pathlib import Path
-
+import asyncio
 import pandas as pd
+from pathlib import Path
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 
-from app.database import SessionLocal
+from app.database import DATABASE_URL
 
-def clean_value(value):
-    if pd.isna(value):
-        return None
-    return value
+BASE_DIR = Path(__file__).resolve().parent.parent
 
-def parse_detected_at(row: pd.Series) -> datetime:
-    date_value = str(row.get("acq_date"))
-    time_value = str(row.get("acq_time")).zfill(4)
-    return datetime.strptime(
-        f"{date_value} {time_value}",
-        "%Y-%m-%d %H%M",
-    ).replace(tzinfo=timezone.utc)
-
-def import_firms_csv(csv_path: str) -> int:
+async def import_firms_csv(csv_path: str) -> int:
     path = Path(csv_path)
-    if not path.exists():
-        raise FileNotFoundError(f"FIRMS CSV was not found: {path}")
+    if not path.is_absolute():
+        path = (BASE_DIR / path).resolve()
 
-    dataframe = pd.read_csv(path)
-    required_columns = {"latitude", "longitude", "acq_date", "acq_time", "frp", "daynight"}
-    missing = required_columns.difference(dataframe.columns)
+    df = pd.read_csv(path, low_memory=False)
+
+    required = {"latitude", "longitude", "frp", "acq_DateTime"}
+    missing = required.difference(df.columns)
     if missing:
-        raise ValueError(f"Missing FIRMS columns: {sorted(missing)}")
+        raise ValueError(f"Missing columns: {sorted(missing)}")
 
-    imported = 0
+    engine = create_async_engine(DATABASE_URL, echo=False, future=True)
 
-    with SessionLocal() as db:
-        for _, row in dataframe.iterrows():
-            latitude = float(row["latitude"])
-            longitude = float(row["longitude"])
-            detected_at = parse_detected_at(row)
+    inserted = 0
+    async with AsyncSession(engine) as session:
+        for _, row in df.iterrows():
+            firms_id = f"{row['latitude']}_{row['longitude']}_{row.get('acq_DateTime', '')}_{row.get('cluster_id', '')}"
+            frp = float(row["frp"]) if pd.notna(row.get("frp")) else None
+            acq_time = pd.to_datetime(row["acq_DateTime"]) if pd.notna(row.get("acq_DateTime")) else None
+            lon = float(row["longitude"])
+            lat = float(row["latitude"])
 
-            firms_id = clean_value(row.get("id"))
-            if firms_id is None:
-                firms_id = f"{latitude:.6f}_{longitude:.6f}_{detected_at.isoformat()}"
-
-            values = {
-                "firms_id": str(firms_id),
-                "latitude": latitude,
-                "longitude": longitude,
-                "detected_at": detected_at,
-                "acq_date": detected_at,
-                "satellite": clean_value(row.get("satellite")),
-                "instrument": clean_value(row.get("instrument")),
-                "source": clean_value(row.get("source")),
-                "frp": clean_value(row.get("frp")),
-                "confidence": clean_value(row.get("confidence")),
-                "day_night": clean_value(row.get("daynight")),
-                "brightness_ti4": clean_value(row.get("bright_ti4")),
-                "brightness_ti5": clean_value(row.get("bright_ti5")),
-            }
-
-            statement = text(
-                """
-                INSERT INTO firms_detections (
-                    firms_id, latitude, longitude, detected_at, acq_date,
-                    satellite, instrument, source, frp, confidence,
-                    day_night, brightness_ti4, brightness_ti5, geom
-                )
-                VALUES (
-                    :firms_id, :latitude, :longitude, :detected_at, :acq_date,
-                    :satellite, :instrument, :source, :frp, :confidence,
-                    :day_night, :brightness_ti4, :brightness_ti5,
-                    ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography
-                )
-                ON CONFLICT (firms_id)
-                DO UPDATE SET
-                    latitude = EXCLUDED.latitude,
-                    longitude = EXCLUDED.longitude,
-                    detected_at = EXCLUDED.detected_at,
-                    acq_date = EXCLUDED.acq_date,
-                    satellite = EXCLUDED.satellite,
-                    instrument = EXCLUDED.instrument,
-                    source = EXCLUDED.source,
+            stmt = text("""
+                INSERT INTO fires (firms_id, frp, acq_timestamptz, geom)
+                VALUES (:firms_id, :frp, :acq_time, ST_MakePoint(:lon, :lat))
+                ON CONFLICT (firms_id) DO UPDATE SET
                     frp = EXCLUDED.frp,
-                    confidence = EXCLUDED.confidence,
-                    day_night = EXCLUDED.day_night,
-                    brightness_ti4 = EXCLUDED.brightness_ti4,
-                    brightness_ti5 = EXCLUDED.brightness_ti5,
+                    acq_timestamptz = EXCLUDED.acq_timestamptz,
                     geom = EXCLUDED.geom
-                """
+            """)
+
+            await session.execute(
+                stmt,
+                {
+                    "firms_id": str(firms_id),
+                    "frp": frp,
+                    "acq_time": acq_time,
+                    "lon": lon,
+                    "lat": lat,
+                },
             )
+            inserted += 1
 
-            db.execute(statement, values)
-            imported += 1
+        await session.commit()
 
-        db.commit()
-
-    return imported
+    await engine.dispose()
+    return inserted
 
 if __name__ == "__main__":
-    csv_file = sys.argv[1] if len(sys.argv) > 1 else "data/firms_latest.csv"
-    count = import_firms_csv(csv_file)
-    print(f"Imported or updated {count} FIRMS detections.")
+    import sys
+    csv_file = sys.argv[1] if len(sys.argv) > 1 else "DataBase/chatisgarh_clean.csv"
+    count = asyncio.run(import_firms_csv(csv_file))
+    print(f"Inserted/updated {count} fire rows.")

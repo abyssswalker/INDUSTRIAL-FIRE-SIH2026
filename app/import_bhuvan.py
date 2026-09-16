@@ -8,7 +8,7 @@ from app.database import DATABASE_URL
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-async def import_osm_geojson(geojson_path: str) -> int:
+async def import_bhuvan_geojson(geojson_path: str) -> int:
     path = Path(geojson_path)
     if not path.is_absolute():
         path = (BASE_DIR / path).resolve()
@@ -26,8 +26,8 @@ async def import_osm_geojson(geojson_path: str) -> int:
             if not geom or geom.get("type") != "Polygon":
                 continue
 
-            name = props.get("name")
-            feature_type = props.get("feature_type") or props.get("industrial") or "industrial"
+            name = props.get("name") or props.get("industrial_name")
+            feature_type = props.get("feature_type") or props.get("type") or "industrial"
             osm_id = props.get("osm_id") or props.get("id") or ""
 
             geom_json = json.dumps(geom)
@@ -35,7 +35,7 @@ async def import_osm_geojson(geojson_path: str) -> int:
             stmt = text("""
                 INSERT INTO industrial_areas (source, name, feature_type, properties, geom)
                 VALUES (
-                    'osm',
+                    'bhuvan',
                     :name,
                     :feature_type,
                     :properties::jsonb,
@@ -62,6 +62,6 @@ async def import_osm_geojson(geojson_path: str) -> int:
 
 if __name__ == "__main__":
     import sys
-    gj_file = sys.argv[1] if len(sys.argv) > 1 else "DataBase/osm/osm_chatisgarh.geojson"
-    count = asyncio.run(import_osm_geojson(gj_file))
-    print(f"Inserted {count} OSM industrial polygons.")
+    gj_file = sys.argv[1] if len(sys.argv) > 1 else "DataBase/bhuvan/industrial_areas.geojson"
+    count = asyncio.run(import_bhuvan_geojson(gj_file))
+    print(f"Inserted {count} Bhuvan industrial polygons.")

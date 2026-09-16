@@ -1,13 +1,32 @@
-{%extends base.html%}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home </title>
+    
+<!--bootstrap-->>
+<link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
 
-{%block title%}
-Home page
-{%endblock%}
-
-{%block content%}
-<h1>TITLE</h1>
-<h2>Tagline</h2>
-
-
-
-{%endblock%}
+    <!--css -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        crossorigin=""
+    >
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+    
+</head>
+<body>
+<h1>Industrial Fire Detection</h1>
+<h2></h2>
+  <a href="{{ url_for('map_page') }}">
+    <button type="button" class="nav-btn">Open Map</button>
+</a>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

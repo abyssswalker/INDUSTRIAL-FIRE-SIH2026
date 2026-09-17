@@ -1,5 +1,7 @@
+from pathlib import Path
 from fastapi import FastAPI, Depends
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from geoalchemy2.shape import to_shape
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,9 +14,28 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# Static files & template paths
+base_dir = Path(__file__).resolve().parent.parent
+static_dir = base_dir / "static"
+templates_dir = base_dir / "templates"
+
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
 @app.get("/")
 async def root():
+    landing = templates_dir / "dashboard.html"
+    if landing.exists():
+        return FileResponse(str(landing))
     return {"message": "Industrial Fire API is running. Open /docs for Swagger."}
+
+@app.get("/dashboard")
+async def dashboard_page():
+    return FileResponse(str(templates_dir / "dashboard.html"))
+
+@app.get("/map")
+async def map_page():
+    return FileResponse(str(templates_dir / "map.html"))
 
 @app.get("/api/fires/current")
 async def list_current_fires(db: AsyncSession = Depends(get_db)):

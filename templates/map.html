@@ -3,93 +3,2345 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cluster Map</title>
+  <title>GeoContext-AI — Incident Command Center</title>
 
-  <!-- Leaflet CSS -->
+  <!-- Typography: Inter, Space Grotesk, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Leaflet Map CSS -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""
   />
 
+  <!-- Fully Embedded Self-Contained Stylesheet -->
   <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-    }
+/* ==========================================================================
+   GeoContext-AI — Main Command Center Dashboard Stylesheet
+   Design Benchmark: Tactical Geospatial Intelligence (SIH 2026)
+   ========================================================================== */
 
-    .page-wrapper {
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+:root {
+  /* Soothing, refined color palette */
+  --bg-app: #080d1a;
+  --bg-panel: #0d1527;
+  --bg-card: rgba(14, 24, 43, 0.85);
+  --bg-card-hover: rgba(20, 34, 60, 0.95);
+  
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(56, 189, 248, 0.35);
 
-    .page-header {
-      padding: 12px 16px;
-      background: #0f172a;
-      color: #fff;
-    }
+  /* Primary soothing blue accents — soft sky & cornflower, not neon */
+  --blue-primary: #38bdf8;
+  --blue-soft: #60a5fa;
+  --blue-pale: #93c5fd;
+  --blue-dim: rgba(56, 189, 248, 0.12);
+  --blue-active-pill: rgba(56, 189, 248, 0.16);
 
-    .page-header h1 {
-      margin: 0;
-      font-size: 22px;
-    }
+  /* Semantic Alert Accents */
+  --color-critical: #ef4444;
+  --color-critical-glow: rgba(239, 68, 68, 0.45);
+  --color-high: #f97316;
+  --color-high-glow: rgba(249, 115, 22, 0.4);
+  --color-moderate: #38bdf8;
+  --color-moderate-glow: rgba(56, 189, 248, 0.4);
+  --color-normal: #10b981;
+  --color-normal-glow: rgba(16, 185, 129, 0.4);
+  --color-industrial: #f59e0b;
+  --color-industrial-fill: rgba(245, 158, 11, 0.12);
 
-    .page-header p {
-      margin: 4px 0 0;
-      font-size: 14px;
-      opacity: 0.9;
-    }
+  /* Typography */
+  --text-main: #f8fafc;
+  --text-body: #cbd5e1;
+  --text-muted: #8492a6;
+  --text-dim: #64748b;
 
-    #map {
-      flex: 1;
-      width: 100%;
-      min-height: 0;
-    }
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", monospace;
+  --font-display: "Space Grotesk", -apple-system, sans-serif;
+}
 
-    .loading-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(255, 255, 255, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      font-size: 14px;
-    }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100vh;
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Master Layout Structure */
+.dashboard-root {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Top Header Bar */
+.top-header {
+  height: 54px;
+  min-height: 54px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 100;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo-icon {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--blue-primary);
+}
+
+.brand-titles {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.brand-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.brand-title .highlight {
+  color: var(--blue-primary);
+}
+
+.brand-tagline {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.header-status-section {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 12px;
+}
+
+.system-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #34d399;
+  font-weight: 500;
+  font-size: 11px;
+}
+
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-normal);
+  box-shadow: 0 0 8px var(--color-normal);
+  animation: pulse-emerald 2s infinite ease-in-out;
+}
+
+@keyframes pulse-emerald {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.header-clock {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icon-btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.icon-btn:hover {
+  color: var(--text-main);
+  border-color: var(--border-focus);
+  background: var(--blue-dim);
+}
+
+.avatar-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--blue-primary);
+}
+
+/* Dashboard Body: Sidebar + Main Stage */
+.dashboard-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Left Sidebar */
+.left-sidebar {
+  width: 190px;
+  min-width: 190px;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 12px;
+  position: relative;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.nav-link-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.nav-link-item svg {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.nav-link-item:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.nav-link-item.active {
+  color: var(--blue-primary);
+  background: var(--blue-active-pill);
+  font-weight: 600;
+}
+
+.nav-badge {
+  margin-left: auto;
+  background: var(--color-critical);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  line-height: 1;
+}
+
+.sidebar-bottom-card {
+  position: relative;
+  border-radius: 10px;
+  padding: 14px 12px;
+  background: linear-gradient(180deg, rgba(14, 24, 43, 0.7) 0%, rgba(10, 16, 28, 0.95) 100%);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.sidebar-brand-text {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-body);
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.sidebar-brand-accent {
+  width: 24px;
+  height: 2px;
+  background: var(--color-normal);
+  border-radius: 2px;
+}
+
+.mountain-bg-art {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 48px;
+  pointer-events: none;
+  opacity: 0.15;
+}
+
+/* Center Stage Area */
+.center-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Upper Workspace: Map (Left) + Right Stack (Right) */
+.upper-workspace {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 14px;
+  min-height: 460px;
+  flex: 1;
+}
+
+/* The Map Container (Hero Element) */
+.map-viewport-wrapper {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  background: #040810;
+  height: 100%;
+  min-height: 460px;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  min-height: 460px;
+  background: #040810;
+}
+
+/* Map Dark Filter for Natural Satellite Imagery */
+.leaflet-tile-pane {
+  filter: brightness(0.78) contrast(1.18) saturate(0.85);
+}
+
+/* Floating Search on Map */
+.map-search-bar {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  background: rgba(13, 21, 39, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 8px 12px;
+  gap: 8px;
+  width: 320px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.map-search-bar svg {
+  width: 15px;
+  height: 15px;
+  color: var(--text-muted);
+}
+
+.map-search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-main);
+  font-size: 12px;
+  width: 100%;
+}
+
+.map-search-input::placeholder {
+  color: var(--text-dim);
+}
+
+.search-shortcut-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 5px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Floating Tools on Top-Right of Map */
+.map-floating-tools {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 1000;
+  display: flex;
+  gap: 6px;
+}
+
+.tool-action-btn {
+  background: rgba(13, 21, 39, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.tool-action-btn:hover {
+  color: var(--text-main);
+  background: var(--bg-card-hover);
+  border-color: var(--border-focus);
+}
+
+/* Floating Vertical Zoom Controls */
+.map-zoom-tools {
+  position: absolute;
+  top: 60px;
+  right: 14px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Floating Map Legend (Bottom-Left) */
+.map-legend-card {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  z-index: 1000;
+  background: rgba(13, 21, 39, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 165px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.legend-label-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-body);
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-dot.critical {
+  background: var(--color-critical);
+  box-shadow: 0 0 6px var(--color-critical-glow);
+}
+
+.legend-dot.high {
+  background: var(--color-high);
+  box-shadow: 0 0 6px var(--color-high-glow);
+}
+
+.legend-dot.moderate {
+  background: var(--color-moderate);
+  box-shadow: 0 0 6px var(--color-moderate-glow);
+}
+
+.legend-dot.normal {
+  background: var(--color-normal);
+  box-shadow: 0 0 6px var(--color-normal-glow);
+}
+
+.legend-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.legend-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 2px 0;
+}
+
+.legend-industrial-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--color-industrial);
+}
+
+.legend-industrial-icon {
+  width: 10px;
+  height: 10px;
+  border: 1px dashed var(--color-industrial);
+  background: var(--color-industrial-fill);
+  border-radius: 2px;
+}
+
+/* Floating Map Scale Bar (Bottom-Right) */
+.map-scale-readout {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.scale-ticks {
+  display: flex;
+  justify-content: space-between;
+  width: 140px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+.scale-ruler {
+  width: 140px;
+  height: 4px;
+  border-left: 1px solid var(--text-muted);
+  border-right: 1px solid var(--text-muted);
+  border-bottom: 1px solid var(--text-muted);
+}
+
+/* Right Stack: Live Alerts + Fire Activity Trend */
+.right-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  height: 100%;
+}
+
+/* Panel Card Container */
+.dashboard-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.card-title-group svg {
+  width: 15px;
+  height: 15px;
+}
+
+.card-sublink {
+  font-size: 11px;
+  color: var(--blue-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+
+.card-sublink:hover {
+  opacity: 0.8;
+}
+
+/* Live Alerts Feed */
+.live-alerts-card {
+  flex: 1;
+  min-height: 250px;
+}
+
+.alerts-feed-scroll {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 4px;
+}
+
+.alerts-feed-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.alerts-feed-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+.alert-feed-item {
+  display: flex;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.alert-feed-item:hover {
+  background: rgba(56, 189, 248, 0.05);
+  border-color: var(--border-focus);
+  transform: translateX(2px);
+}
+
+.alert-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.alert-indicator-dot.critical {
+  background: var(--color-critical);
+  box-shadow: 0 0 6px var(--color-critical-glow);
+}
+
+.alert-indicator-dot.high {
+  background: var(--color-high);
+  box-shadow: 0 0 6px var(--color-high-glow);
+}
+
+.alert-indicator-dot.moderate {
+  background: var(--color-moderate);
+  box-shadow: 0 0 6px var(--color-moderate-glow);
+}
+
+.alert-indicator-dot.normal {
+  background: var(--color-normal);
+  box-shadow: 0 0 6px var(--color-normal-glow);
+}
+
+.alert-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.alert-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.alert-headline {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.alert-timestamp {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+
+.alert-subline {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.alert-location {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+/* Fire Activity Trend Chart Card */
+.trend-card {
+  height: 180px;
+  flex-shrink: 0;
+}
+
+.chart-legend-row {
+  display: flex;
+  gap: 12px;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.chart-legend-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chart-svg-container {
+  width: 100%;
+  height: 85px;
+  margin-top: 6px;
+}
+
+.chart-timeline-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  padding: 0 6px;
+}
+
+/* Lower Workspace: 4 Cards Below Map */
+.lower-workspace {
+  display: grid;
+  grid-template-columns: 280px 1fr 240px 240px;
+  gap: 14px;
+  height: 195px;
+  min-height: 195px;
+  flex-shrink: 0;
+}
+
+/* Card 1: Our Mission */
+.mission-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 16px;
+}
+
+.mission-card-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8, 13, 26, 0.45) 0%, rgba(8, 13, 26, 0.95) 100%),
+              radial-gradient(circle at 75% 70%, rgba(249, 115, 22, 0.35) 0%, transparent 65%),
+              linear-gradient(135deg, #0b1528 0%, #060a14 100%);
+  background-size: cover;
+  z-index: 1;
+}
+
+.mission-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mission-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--blue-primary);
+  letter-spacing: 1.5px;
+}
+
+.mission-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.3;
+}
+
+.mission-desc {
+  font-size: 11px;
+  color: var(--text-body);
+  line-height: 1.45;
+  margin-top: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mission-btn {
+  margin-top: 8px;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--blue-primary);
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 6px;
+  padding: 4px 10px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.mission-btn:hover {
+  background: var(--blue-primary);
+  color: #000;
+}
+
+/* Card 2: Key Insights Metrics */
+.insights-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  flex: 1;
+  align-items: center;
+}
+
+.metric-box {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.metric-icon-bubble {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.metric-icon-bubble.critical {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--color-critical);
+}
+
+.metric-icon-bubble.high {
+  background: rgba(249, 115, 22, 0.12);
+  color: var(--color-high);
+}
+
+.metric-icon-bubble.total {
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--blue-primary);
+}
+
+.metric-value {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+
+.metric-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.metric-delta {
+  font-size: 10px;
+  color: var(--color-normal);
+  font-weight: 500;
+}
+
+/* Card 3: Data Sources */
+.datasources-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.sources-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.source-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+
+.source-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.source-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--blue-primary);
+}
+
+.source-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.source-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.source-role {
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+.source-status-light {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-normal);
+  box-shadow: 0 0 6px var(--color-normal);
+}
+
+/* Card 4: Built By Team Card */
+.team-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+.team-header-area {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.team-eyebrow {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.team-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.team-event {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.team-wave-footer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.team-quote {
+  font-style: italic;
+  font-family: "Georgia", serif;
+  font-size: 12px;
+  color: var(--blue-soft);
+  opacity: 0.9;
+}
+
+.topographic-wave-svg {
+  width: 100%;
+  height: 34px;
+  opacity: 0.25;
+}
+
+/* ==========================================================================
+   Leaflet Hotspot Pulsing Markers (SVG & CSS Keyframes)
+   ========================================================================== */
+
+.hotspot-custom-marker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.marker-inner-dot {
+  border-radius: 50%;
+  z-index: 5;
+  transition: transform 0.2s ease;
+}
+
+.marker-pulse-ring {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: hotspot-ripple 2.4s infinite cubic-bezier(0.2, 0.6, 0.35, 1);
+}
+
+.marker-pulse-ring.delay {
+  animation-delay: 1.2s;
+}
+
+@keyframes hotspot-ripple {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.7);
+    opacity: 0;
+  }
+}
+
+/* Sizing by Risk Level */
+.hotspot-custom-marker.critical {
+  width: 20px;
+  height: 20px;
+}
+.hotspot-custom-marker.critical .marker-inner-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--color-critical);
+  box-shadow: 0 0 10px var(--color-critical);
+}
+.hotspot-custom-marker.critical .marker-pulse-ring {
+  inset: -6px;
+  border: 1.5px solid var(--color-critical);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.hotspot-custom-marker.high {
+  width: 16px;
+  height: 16px;
+}
+.hotspot-custom-marker.high .marker-inner-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--color-high);
+  box-shadow: 0 0 8px var(--color-high);
+}
+.hotspot-custom-marker.high .marker-pulse-ring {
+  inset: -4px;
+  border: 1.2px solid var(--color-high);
+  background: rgba(249, 115, 22, 0.1);
+}
+
+.hotspot-custom-marker.moderate {
+  width: 14px;
+  height: 14px;
+}
+.hotspot-custom-marker.moderate .marker-inner-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--color-moderate);
+  box-shadow: 0 0 6px var(--color-moderate);
+}
+.hotspot-custom-marker.moderate .marker-pulse-ring {
+  inset: -3px;
+  border: 1px solid var(--color-moderate);
+  background: rgba(56, 189, 248, 0.06);
+}
+
+.hotspot-custom-marker.normal {
+  width: 12px;
+  height: 12px;
+}
+.hotspot-custom-marker.normal .marker-inner-dot {
+  width: 5px;
+  height: 5px;
+  background: var(--color-normal);
+  box-shadow: 0 0 5px var(--color-normal);
+}
+.hotspot-custom-marker.normal .marker-pulse-ring {
+  inset: -2px;
+  border: 1px solid var(--color-normal);
+  background: rgba(16, 185, 129, 0.05);
+  animation-duration: 3.2s;
+}
+
+.hotspot-custom-marker:hover .marker-inner-dot {
+  transform: scale(1.4);
+}
+
+/* Custom Tactical Hover Tooltip */
+.hud-tooltip-card {
+  background: rgba(10, 17, 32, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-focus);
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  min-width: 210px;
+  color: var(--text-main);
+  pointer-events: none;
+  font-family: var(--font-sans);
+}
+
+.hud-tooltip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.hud-tooltip-badge.critical {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.hud-tooltip-badge.high {
+  background: rgba(249, 115, 22, 0.18);
+  color: #fdba74;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+}
+
+.hud-tooltip-badge.moderate {
+  background: rgba(56, 189, 248, 0.18);
+  color: #bae6fd;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.hud-tooltip-badge.normal {
+  background: rgba(16, 185, 129, 0.18);
+  color: #a7f3d0;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.hud-tooltip-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #fff;
+}
+
+.hud-tooltip-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.hud-tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hud-tooltip-label {
+  color: var(--text-dim);
+}
+
+.hud-tooltip-val {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-body);
+}
+
+/* Slide-in Incident Detail Drawer */
+.incident-drawer {
+  position: fixed;
+  top: 54px;
+  right: 0;
+  width: 360px;
+  height: calc(100vh - 54px);
+  background: rgba(11, 18, 34, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-left: 1px solid var(--border-subtle);
+  z-index: 2000;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.6);
+}
+
+.incident-drawer.open {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.drawer-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.drawer-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+}
+
+.drawer-close-btn:hover {
+  color: #fff;
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.drawer-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.drawer-stat-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drawer-stat-val {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.drawer-stat-lbl {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.drawer-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.drawer-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.drawer-btn.primary {
+  background: var(--blue-primary);
+  color: #000;
+}
+
+.drawer-btn.secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+/* ==========================================================================
+   Responsive Adaptations
+   ========================================================================== */
+
+@media (max-width: 1440px) {
+  .lower-workspace {
+    grid-template-columns: 240px 1fr 210px 210px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .dashboard-body {
+    flex-direction: row;
+  }
+  .left-sidebar {
+    width: 60px;
+    min-width: 60px;
+    padding: 12px 6px;
+  }
+  .left-sidebar .nav-label,
+  .left-sidebar .sidebar-bottom-card {
+    display: none;
+  }
+  .nav-link-item {
+    justify-content: center;
+    padding: 10px;
+  }
+  .upper-workspace {
+    grid-template-columns: 1fr 300px;
+  }
+  .lower-workspace {
+    grid-template-columns: 1fr 1fr;
+    height: auto;
+  }
+}
+
+@media (max-width: 900px) {
+  .upper-workspace {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .map-viewport-wrapper {
+    height: 420px;
+  }
+  .right-stack {
+    height: 380px;
+  }
+  .lower-workspace {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+}
+
   </style>
 </head>
 <body>
-  <div class="page-wrapper">
-    <div class="page-header">
-      <h1>Industrial Fire Cluster Map</h1>
-      <p>Viewing cluster hotspots and labels from the database</p>
+
+  <div class="dashboard-root">
+
+    <!-- Top Header Bar -->
+    <header class="top-header">
+      <div class="brand-section">
+        <div class="brand-logo-icon">
+          <!-- Globe Grid Vector Icon with explicit dimensions -->
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+        </div>
+        <div class="brand-titles">
+          <a href="dashboard.html" class="brand-title">GeoContext<span class="highlight">-AI</span></a>
+          <span class="brand-tagline">Geospatial Intelligence for a Safer Tomorrow</span>
+        </div>
+      </div>
+
+      <div class="header-status-section">
+        <div class="system-status-badge">
+          <span class="pulse-dot"></span>
+          <span>System Online</span>
+        </div>
+        <div id="headerClock" class="header-clock">Apr 12, 2026 | 14:32 UTC</div>
+        <div class="header-actions">
+          <button class="icon-btn" title="Toggle Display Mode" aria-label="Toggle Display Mode">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          </button>
+          <div class="avatar-badge" title="Incident Commander">GC</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Dashboard Body: Sidebar + Main Content -->
+    <div class="dashboard-body">
+
+      <!-- Left Navigation Sidebar -->
+      <aside class="left-sidebar">
+        <nav class="nav-group">
+          <a href="dashboard.html" class="nav-link-item">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span class="nav-label">Home</span>
+          </a>
+          <a href="#" class="nav-link-item active">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+              <line x1="8" y1="2" x2="8" y2="18"></line>
+              <line x1="16" y1="6" x2="16" y2="22"></line>
+            </svg>
+            <span class="nav-label">Live Map</span>
+          </a>
+          <a href="#alertsFeed" class="nav-link-item">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="nav-label">Alerts</span>
+            <span class="nav-badge">12</span>
+          </a>
+          <a href="#insightsCard" class="nav-link-item">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+            <span class="nav-label">Analytics</span>
+          </a>
+          <a href="#dataSourcesCard" class="nav-link-item">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span class="nav-label">Reports</span>
+          </a>
+          <a href="#" class="nav-link-item">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span class="nav-label">Settings</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-bottom-card">
+          <div class="sidebar-brand-text">
+            Smarter<br />Data.<br />Safer<br />Communities.
+          </div>
+          <div class="sidebar-brand-accent"></div>
+          <!-- Mountain Vector Silhouette with fixed height -->
+          <svg class="mountain-bg-art" width="100%" height="48" viewBox="0 0 200 60" preserveAspectRatio="none">
+            <polygon points="0,60 30,35 65,50 110,20 150,45 200,10 200,60" fill="#38bdf8"></polygon>
+          </svg>
+        </div>
+      </aside>
+
+      <!-- Center Stage Area -->
+      <main class="center-stage">
+
+        <!-- Upper Workspace: Map (The Hero) + Right Stack -->
+        <div class="upper-workspace">
+
+          <!-- The Map Viewport (Hero Element) -->
+          <div class="map-viewport-wrapper">
+            <!-- Floating Search Input -->
+            <div class="map-search-bar">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input
+                id="mapSearchInput"
+                type="text"
+                class="map-search-input"
+                placeholder="Search location, industry, or coordinates..."
+              />
+              <span class="search-shortcut-badge">Ctrl K</span>
+            </div>
+
+            <!-- Floating Action Tools (Top-Right) -->
+            <div class="map-floating-tools">
+              <button id="toolLayerToggle" class="tool-action-btn" title="Toggle Basemap (Satellite / Dark)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                  <polyline points="2 17 12 22 22 17"></polyline>
+                  <polyline points="2 12 12 17 22 12"></polyline>
+                </svg>
+              </button>
+              <button id="toolRecenter" class="tool-action-btn" title="Recenter on India Subcontinent">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                </svg>
+              </button>
+              <button class="tool-action-btn" title="3D Terrain Mode (Perspective)">3D</button>
+              <button id="toolFullscreen" class="tool-action-btn" title="Fullscreen Viewport">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Floating Zoom Controls -->
+            <div class="map-zoom-tools">
+              <button id="zoomInBtn" class="tool-action-btn" title="Zoom In">+</button>
+              <button id="zoomOutBtn" class="tool-action-btn" title="Zoom Out">−</button>
+            </div>
+
+            <!-- Floating Legend (Bottom-Left) -->
+            <div class="map-legend-card">
+              <div class="legend-item">
+                <div class="legend-label-group">
+                  <span class="legend-dot critical"></span>
+                  <span>Critical Fire</span>
+                </div>
+                <span id="legendCountCritical" class="legend-count">12</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-label-group">
+                  <span class="legend-dot high"></span>
+                  <span>High Risk</span>
+                </div>
+                <span id="legendCountHigh" class="legend-count">28</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-label-group">
+                  <span class="legend-dot moderate"></span>
+                  <span>Moderate</span>
+                </div>
+                <span id="legendCountModerate" class="legend-count">54</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-label-group">
+                  <span class="legend-dot normal"></span>
+                  <span>Normal</span>
+                </div>
+                <span id="legendCountNormal" class="legend-count">93</span>
+              </div>
+              <div class="legend-divider"></div>
+              <div class="legend-industrial-row">
+                <span class="legend-industrial-icon"></span>
+                <span>Industrial Zone</span>
+              </div>
+            </div>
+
+            <!-- Floating Scale Bar (Bottom-Right) -->
+            <div class="map-scale-readout">
+              <div class="scale-ticks">
+                <span>0</span>
+                <span>250</span>
+                <span>500</span>
+                <span>1,000 km</span>
+              </div>
+              <div class="scale-ruler"></div>
+            </div>
+
+            <!-- Leaflet Container -->
+            <div id="map"></div>
+          </div>
+
+          <!-- Right-Side Stack: Live Alerts + Fire Activity Trend -->
+          <div class="right-stack">
+
+            <!-- Live Alerts Panel -->
+            <div class="dashboard-card live-alerts-card">
+              <div class="card-header-row">
+                <div class="card-title-group">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <span>Live Alerts</span>
+                </div>
+                <a href="#alertsFeed" class="card-sublink">View All →</a>
+              </div>
+
+              <div id="alertsFeed" class="alerts-feed-scroll">
+                <!-- Dynamically populated by JS from dataset -->
+                <div class="alert-feed-item">
+                  <div class="alert-indicator-dot critical"></div>
+                  <div class="alert-content">
+                    <div class="alert-title-row">
+                      <span class="alert-headline">Critical Fire Detected</span>
+                      <span class="alert-timestamp">12m ago</span>
+                    </div>
+                    <div class="alert-subline">2.4 km from Industrial Zone</div>
+                    <div class="alert-location">Nagpur, Maharashtra</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Fire Activity Trend Chart -->
+            <div class="dashboard-card trend-card">
+              <div class="card-header-row" style="margin-bottom: 4px;">
+                <div class="card-title-group">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                  </svg>
+                  <span>Fire Activity Trend</span>
+                </div>
+                <span style="font-size: 10px; color: var(--text-dim);">Last 24 Hours</span>
+              </div>
+
+              <!-- SVG Smooth Line Curves -->
+              <svg id="trendSvg" class="chart-svg-container" viewBox="0 0 300 75" preserveAspectRatio="none"></svg>
+
+              <div class="chart-timeline-labels">
+                <span>00:00</span>
+                <span>06:00</span>
+                <span>12:00</span>
+                <span>18:00</span>
+                <span>24:00</span>
+              </div>
+
+              <div class="chart-legend-row">
+                <div class="chart-legend-pill"><span class="legend-dot critical" style="width:6px;height:6px;"></span> Critical</div>
+                <div class="chart-legend-pill"><span class="legend-dot high" style="width:6px;height:6px;"></span> High</div>
+                <div class="chart-legend-pill"><span class="legend-dot moderate" style="width:6px;height:6px;"></span> Moderate</div>
+                <div class="chart-legend-pill"><span class="legend-dot normal" style="width:6px;height:6px;"></span> Normal</div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Lower Workspace: 4 Cards Below Map -->
+        <div class="lower-workspace">
+
+          <!-- Card 1: Our Mission -->
+          <div class="dashboard-card mission-card">
+            <div class="mission-card-bg"></div>
+            <div class="mission-content">
+              <span class="mission-eyebrow">OUR MISSION</span>
+              <h3 class="mission-title">Protecting Industries. Preserving Lives.</h3>
+              <p class="mission-desc">
+                GeoContext-AI correlates satellite thermal observations, spatial context, and statistical scoring to isolate anomalous industrial fires.
+              </p>
+              <a href="dashboard.html" class="mission-btn">
+                <span>Learn More</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </a>
+            </div>
+          </div>
+
+          <!-- Card 2: Key Insights Metrics -->
+          <div id="insightsCard" class="dashboard-card insights-card">
+            <div class="card-header-row">
+              <div class="card-title-group">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="9" y1="3" x2="9" y2="21"></line>
+                </svg>
+                <span>Key Insights</span>
+              </div>
+            </div>
+
+            <div class="metrics-row">
+              <div class="metric-box">
+                <div class="metric-header">
+                  <div class="metric-icon-bubble critical">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2c1.5 3 4 5 4 9 0 3.3-2.7 6-6 6s-6-2.7-6-6c0-4 2.5-6 4-9 1 2 2 3 4 0z"></path>
+                    </svg>
+                  </div>
+                  <span class="metric-label">Critical Alerts</span>
+                </div>
+                <div id="metricCriticalVal" class="metric-value">12</div>
+                <div class="metric-delta">↑ 2.3% from yesterday</div>
+              </div>
+
+              <div class="metric-box">
+                <div class="metric-header">
+                  <div class="metric-icon-bubble high">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                      <line x1="12" y1="9" x2="12" y2="13"></line>
+                      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                  </div>
+                  <span class="metric-label">High Risk Zones</span>
+                </div>
+                <div id="metricHighVal" class="metric-value">28</div>
+                <div class="metric-delta">↑ 1.1% from yesterday</div>
+              </div>
+
+              <div class="metric-box">
+                <div class="metric-header">
+                  <div class="metric-icon-bubble total">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+                    </svg>
+                  </div>
+                  <span class="metric-label">Total Hotspots</span>
+                </div>
+                <div id="metricTotalVal" class="metric-value">54</div>
+                <div class="metric-delta">↑ 3.2% from yesterday</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Data Sources -->
+          <div id="dataSourcesCard" class="dashboard-card datasources-card">
+            <div class="card-header-row">
+              <div class="card-title-group">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                  <polyline points="2 17 12 22 22 17"></polyline>
+                  <polyline points="2 12 12 17 22 12"></polyline>
+                </svg>
+                <span>Data Sources</span>
+              </div>
+            </div>
+
+            <div class="sources-list">
+              <div class="source-row">
+                <div class="source-info">
+                  <div class="source-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                  </div>
+                  <div class="source-titles">
+                    <span class="source-name">NASA FIRMS</span>
+                    <span class="source-role">Fire Information (VIIRS 375m)</span>
+                  </div>
+                </div>
+                <span class="source-status-light"></span>
+              </div>
+
+              <div class="source-row">
+                <div class="source-info">
+                  <div class="source-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                    </svg>
+                  </div>
+                  <div class="source-titles">
+                    <span class="source-name">OpenStreetMap</span>
+                    <span class="source-role">Industrial Spatial Polygons</span>
+                  </div>
+                </div>
+                <span class="source-status-light"></span>
+              </div>
+
+              <div class="source-row">
+                <div class="source-info">
+                  <div class="source-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 2a10 10 0 0 0-10 10c0 4.4 2.9 8.2 7 9.5.5.1.7-.2.7-.5v-1.8c-2.8.6-3.4-1.4-3.4-1.4-.5-1.1-1.1-1.4-1.1-1.4-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.4-2.2-.2-4.6-1.1-4.6-4.9 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 0 1 5 0c2-1.3 2.8-1 2.8-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.8-2.4 4.7-4.6 4.9.4.3.7.9.7 1.9V21c0 .3.2.6.7.5 4.1-1.3 7-5.1 7-9.5A10 10 0 0 0 12 2z"></path>
+                    </svg>
+                  </div>
+                  <div class="source-titles">
+                    <span class="source-name">Machine Learning</span>
+                    <span class="source-role">DBSCAN + Recurrence Scoring</span>
+                  </div>
+                </div>
+                <span class="source-status-light"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: Built By Team Card -->
+          <div class="dashboard-card team-card">
+            <div class="team-header-area">
+              <span class="team-eyebrow">BUILT BY</span>
+              <h4 class="team-title">GeoContext-AI Team</h4>
+              <span class="team-event">Smart India Hackathon 2026</span>
+            </div>
+
+            <div class="team-wave-footer">
+              <span class="team-quote">Real data. Real impact.</span>
+              <!-- Topographic Wave Curve SVG with explicit dimensions -->
+              <svg class="topographic-wave-svg" width="100%" height="34" viewBox="0 0 200 40" preserveAspectRatio="none">
+                <path d="M0,25 Q40,5 90,28 T180,15 T200,30" fill="none" stroke="#38bdf8" stroke-width="1.2"></path>
+                <path d="M0,32 Q50,15 100,35 T190,20 T200,38" fill="none" stroke="#60a5fa" stroke-width="1"></path>
+                <path d="M0,38 Q60,20 120,38 T200,28" fill="none" stroke="#93c5fd" stroke-width="0.8"></path>
+              </svg>
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+
     </div>
 
-    <div id="map">
-      <div id="loading" class="loading-overlay">Loading hotspots…</div>
+    <!-- Slide-in Incident Detail Drawer -->
+    <div id="incidentDrawer" class="incident-drawer">
+      <div class="drawer-header">
+        <div>
+          <div id="drawerBadge" class="hud-tooltip-badge critical">CRITICAL ANOMALY</div>
+          <h3 id="drawerTitle" class="drawer-title">Cluster Details</h3>
+        </div>
+        <button id="drawerCloseBtn" class="drawer-close-btn" title="Close Panel">✕</button>
+      </div>
+
+      <div class="drawer-body">
+        <div class="drawer-stat-grid">
+          <div class="drawer-stat-card">
+            <span class="drawer-stat-lbl">Centroid Coordinates</span>
+            <span id="drawerCoords" class="drawer-stat-val">21.37°N, 81.67°E</span>
+          </div>
+          <div class="drawer-stat-card">
+            <span class="drawer-stat-lbl">Total Detections</span>
+            <span id="drawerDetections" class="drawer-stat-val">323</span>
+          </div>
+          <div class="drawer-stat-card">
+            <span class="drawer-stat-lbl">Mean FRP</span>
+            <span id="drawerFrp" class="drawer-stat-val">2.89 MW</span>
+          </div>
+          <div class="drawer-stat-card">
+            <span class="drawer-stat-lbl">Industrial Proximity</span>
+            <span id="drawerDistance" class="drawer-stat-val">99 m</span>
+          </div>
+          <div class="drawer-stat-card">
+            <span class="drawer-stat-lbl">Nearest Facility</span>
+            <span id="drawerFacility" class="drawer-stat-val">Steel Plant</span>
+          </div>
+          <div class="drawer-stat-card">
+            <span class="drawer-stat-lbl">Recurrence Rate</span>
+            <span id="drawerRecurrence" class="drawer-stat-val">27.4%</span>
+          </div>
+          <div class="drawer-stat-card">
+            <span class="drawer-stat-lbl">Industrial Score</span>
+            <span id="drawerScore" class="drawer-stat-val">6 / 8</span>
+          </div>
+          <div class="drawer-stat-card">
+            <span class="drawer-stat-lbl">Model Classification</span>
+            <span id="drawerLabel" class="drawer-stat-val">INDUSTRIAL</span>
+          </div>
+        </div>
+
+        <div class="drawer-actions">
+          <button id="drawerFocusBtn" class="drawer-btn primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="22" y1="12" x2="18" y2="12"></line>
+              <line x1="6" y1="12" x2="2" y2="12"></line>
+              <line x1="12" y1="6" x2="12" y2="2"></line>
+              <line x1="12" y1="22" x2="12" y2="18"></line>
+            </svg>
+            <span>Focus on Map</span>
+          </button>
+        </div>
+      </div>
     </div>
+
   </div>
 
-  <!-- Leaflet JS -->
+  <!-- Leaflet Map JS Library -->
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""
   ></script>
 
-  <!-- Pass API URLs from FastAPI into JS -->
+  <!-- Embedded Authentic Dataset -->
   <script>
-    window.APP_CONFIG = {
-      hotspotsUrl: "{{ url_for('read_hotspots') }}",
-      statsUrl: "{{ url_for('read_stats') }}"
-    };
+window.GEOCONTEXT_DATA = {"clusters": [{"id": "VIIRS-99281", "name": "Nagpur Industrial Hub", "lat": 21.1458, "lon": 79.0882, "detections": 342, "frp": 124.5, "distance_m": 2400.0, "facility": "MIDC Butibori Industrial Zone", "location_name": "Nagpur, Maharashtra", "recurrence": 28.4, "ind_score": 7, "label": "industrial", "tier": "critical", "alert_headline": "Critical Fire Detected", "alert_sub": "2.4 km from Industrial Zone", "time_ago": "12m ago"}, {"id": "VIIRS-44210", "name": "Bhilai Steel Corridor", "lat": 21.2094, "lon": 81.3509, "detections": 389, "frp": 148.2, "distance_m": 99.0, "facility": "Bhilai Steel Heavy Complex", "location_name": "Durg/Bhilai, Chhattisgarh", "recurrence": 32.6, "ind_score": 8, "label": "industrial", "tier": "critical", "alert_headline": "Critical Steel Flaring", "alert_sub": "99m from Blast Furnace", "time_ago": "4h ago"}, {"id": "VIIRS-33190", "name": "Korba Super Thermal Hub", "lat": 22.3595, "lon": 82.6805, "detections": 420, "frp": 165.0, "distance_m": 65.0, "facility": "NTPC & BALCO Thermal Plant", "location_name": "Korba, Chhattisgarh", "recurrence": 36.1, "ind_score": 8, "label": "industrial", "tier": "critical", "alert_headline": "Critical Thermal Emission", "alert_sub": "65m from Coal Yard", "time_ago": "5h ago"}, {"id": "VIIRS-C7", "name": "Raigarh Steel Hub", "lat": 21.8974, "lon": 83.395, "detections": 295, "frp": 98.4, "distance_m": 410.0, "facility": "Jindal Steel Complex", "location_name": "Raigarh, CG", "recurrence": 22.1, "ind_score": 7, "label": "industrial", "tier": "critical"}, {"id": "VIIRS-C8", "name": "Singrauli Power Belt", "lat": 24.1997, "lon": 82.6644, "detections": 310, "frp": 112.0, "distance_m": 320.0, "facility": "Northern Coalfields NTPC", "location_name": "Singrauli, MP", "recurrence": 25.4, "ind_score": 7, "label": "industrial", "tier": "critical"}, {"id": "VIIRS-C9", "name": "Visakhapatnam Steel Zone", "lat": 17.6868, "lon": 83.2185, "detections": 260, "frp": 88.5, "distance_m": 280.0, "facility": "RINL Steel Plant", "location_name": "Visakhapatnam, AP", "recurrence": 20.2, "ind_score": 6, "label": "industrial", "tier": "critical"}, {"id": "VIIRS-C10", "name": "Rourkela Steel Corridor", "lat": 22.2604, "lon": 84.8536, "detections": 280, "frp": 94.0, "distance_m": 190.0, "facility": "SAIL Rourkela Complex", "location_name": "Rourkela, Odisha", "recurrence": 21.8, "ind_score": 7, "label": "industrial", "tier": "critical"}, {"id": "VIIRS-C11", "name": "Jamshedpur Tata Belt", "lat": 22.8046, "lon": 86.2029, "detections": 330, "frp": 118.0, "distance_m": 150.0, "facility": "Tata Steel Works", "location_name": "Jamshedpur, Jharkhand", "recurrence": 27.5, "ind_score": 7, "label": "industrial", "tier": "critical"}, {"id": "VIIRS-C12", "name": "Manikpur Open Mine", "lat": 22.338, "lon": 82.721, "detections": 270, "frp": 91.0, "distance_m": 85.0, "facility": "SECL Coal Handling", "location_name": "Korba, CG", "recurrence": 23.0, "ind_score": 6, "label": "industrial", "tier": "critical"}, {"id": "VIIRS-88124", "name": "Bharuch Chemical Corridor", "lat": 21.7051, "lon": 72.9959, "detections": 215, "frp": 86.2, "distance_m": 350.0, "facility": "Ankleshwar Chemical Estate", "location_name": "Bharuch, Gujarat", "recurrence": 19.8, "ind_score": 6, "label": "industrial", "tier": "critical", "alert_headline": "High Risk Activity", "alert_sub": "Near Chemical Plant", "time_ago": "28m ago"}, {"id": "VIIRS-22081", "name": "New Delhi Industrial Belt", "lat": 28.6139, "lon": 77.209, "detections": 210, "frp": 65.4, "distance_m": 1100.0, "facility": "Okhla Industrial Area", "location_name": "Delhi NCR", "recurrence": 14.2, "ind_score": 5, "label": "industrial", "tier": "critical", "alert_headline": "High Risk Activity", "alert_sub": "Urban Industrial Boundary", "time_ago": "6h ago"}, {"id": "VIIRS-11942", "name": "Bengaluru Peenya Corridor", "lat": 12.9716, "lon": 77.5946, "detections": 180, "frp": 58.0, "distance_m": 1800.0, "facility": "Peenya Manufacturing Belt", "location_name": "Bengaluru, Karnataka", "recurrence": 11.5, "ind_score": 5, "label": "industrial", "tier": "critical", "alert_headline": "High Risk Activity", "alert_sub": "Manufacturing Complex", "time_ago": "7h ago"}, {"id": "VIIRS-99014", "name": "Kolkata Asansol Belt", "lat": 22.5726, "lon": 88.3639, "detections": 195, "frp": 52.3, "distance_m": 2200.0, "facility": "Heavy Metallurgy Zone", "location_name": "Kolkata, West Bengal", "recurrence": 9.8, "ind_score": 4, "label": "industrial", "tier": "high", "alert_headline": "High Risk Activity", "alert_sub": "Industrial Siding", "time_ago": "8h ago"}, {"id": "CG-21", "name": "Cluster #21", "lat": 17.9682, "lon": 83.1539, "detections": 26, "frp": 1.0, "distance_m": 152.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [17.97\u00b0N, 83.15\u00b0E]", "recurrence": 2.5, "ind_score": 5, "label": "industrial", "tier": "high"}, {"id": "CG-22", "name": "Cluster #22", "lat": 21.3235, "lon": 81.578, "detections": 20, "frp": 0.7, "distance_m": 599.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.32\u00b0N, 81.58\u00b0E]", "recurrence": 2.4, "ind_score": 5, "label": "industrial", "tier": "high"}, {"id": "CG-0", "name": "Cluster #0", "lat": 21.3002, "lon": 81.6059, "detections": 106, "frp": 1.1, "distance_m": 1019.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.3\u00b0N, 81.61\u00b0E]", "recurrence": 10.7, "ind_score": 4, "label": "uncertain", "tier": "high"}, {"id": "CG-1", "name": "Cluster #1", "lat": 21.3108, "lon": 81.5899, "detections": 118, "frp": 1.0, "distance_m": 208.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.31\u00b0N, 81.59\u00b0E]", "recurrence": 10.8, "ind_score": 6, "label": "industrial", "tier": "high"}, {"id": "CG-2", "name": "Cluster #2", "lat": 21.3734, "lon": 81.6795, "detections": 323, "frp": 1.8, "distance_m": 129.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.37\u00b0N, 81.68\u00b0E]", "recurrence": 27.5, "ind_score": 8, "label": "industrial", "tier": "high"}, {"id": "CG-3", "name": "Cluster #3", "lat": 21.3787, "lon": 81.6454, "detections": 344, "frp": 1.6, "distance_m": 989.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.38\u00b0N, 81.65\u00b0E]", "recurrence": 29.2, "ind_score": 7, "label": "industrial", "tier": "high"}, {"id": "CG-4", "name": "Cluster #4", "lat": 21.4879, "lon": 81.7681, "detections": 140, "frp": 1.7, "distance_m": 66.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.49\u00b0N, 81.77\u00b0E]", "recurrence": 12.8, "ind_score": 7, "label": "industrial", "tier": "high"}, {"id": "CG-6", "name": "Cluster #6", "lat": 21.674, "lon": 82.0802, "detections": 135, "frp": 1.6, "distance_m": 432.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.67\u00b0N, 82.08\u00b0E]", "recurrence": 12.3, "ind_score": 5, "label": "industrial", "tier": "high"}, {"id": "CG-7", "name": "Cluster #7", "lat": 22.3589, "lon": 82.3026, "detections": 285, "frp": 2.3, "distance_m": 839.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [22.36\u00b0N, 82.3\u00b0E]", "recurrence": 27.4, "ind_score": 4, "label": "uncertain", "tier": "high"}, {"id": "CG-8", "name": "Cluster #8", "lat": 21.748, "lon": 83.843, "detections": 452, "frp": 3.3, "distance_m": 695.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.75\u00b0N, 83.84\u00b0E]", "recurrence": 38.1, "ind_score": 6, "label": "industrial", "tier": "high"}, {"id": "CG-9", "name": "Cluster #9", "lat": 21.9851, "lon": 83.2328, "detections": 157, "frp": 1.6, "distance_m": 185.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.99\u00b0N, 83.23\u00b0E]", "recurrence": 14.4, "ind_score": 6, "label": "industrial", "tier": "high"}, {"id": "CG-10", "name": "Cluster #10", "lat": 22.0054, "lon": 82.6691, "detections": 238, "frp": 1.7, "distance_m": 65.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [22.01\u00b0N, 82.67\u00b0E]", "recurrence": 20.3, "ind_score": 7, "label": "industrial", "tier": "high"}, {"id": "CG-11", "name": "Cluster #11", "lat": 22.0362, "lon": 83.3558, "detections": 501, "frp": 1.7, "distance_m": 2663.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [22.04\u00b0N, 83.36\u00b0E]", "recurrence": 44.1, "ind_score": 6, "label": "industrial", "tier": "high"}, {"id": "CG-12", "name": "Cluster #12", "lat": 22.3169, "lon": 82.5325, "detections": 475, "frp": 1.7, "distance_m": 1569.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [22.32\u00b0N, 82.53\u00b0E]", "recurrence": 41.1, "ind_score": 5, "label": "industrial", "tier": "high"}, {"id": "CG-13", "name": "Cluster #13", "lat": 22.3285, "lon": 82.598, "detections": 226, "frp": 1.8, "distance_m": 1774.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [22.33\u00b0N, 82.6\u00b0E]", "recurrence": 20.5, "ind_score": 4, "label": "uncertain", "tier": "high"}, {"id": "CG-14", "name": "Cluster #14", "lat": 22.3316, "lon": 82.5322, "detections": 25, "frp": 0.8, "distance_m": 331.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [22.33\u00b0N, 82.53\u00b0E]", "recurrence": 3.2, "ind_score": 4, "label": "uncertain", "tier": "high"}, {"id": "CG-15", "name": "Cluster #15", "lat": 23.1664, "lon": 82.3386, "detections": 679, "frp": 3.1, "distance_m": 1230.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [23.17\u00b0N, 82.34\u00b0E]", "recurrence": 61.7, "ind_score": 4, "label": "uncertain", "tier": "high"}, {"id": "CG-16", "name": "Cluster #16", "lat": 24.0536, "lon": 80.613, "detections": 39, "frp": 1.0, "distance_m": 297.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [24.05\u00b0N, 80.61\u00b0E]", "recurrence": 3.8, "ind_score": 4, "label": "uncertain", "tier": "high"}, {"id": "CG-18", "name": "Cluster #18", "lat": 19.0999, "lon": 82.1671, "detections": 467, "frp": 2.2, "distance_m": 190.0, "facility": "industrial=steelmaking", "location_name": "Chhattisgarh Corridor [19.1\u00b0N, 82.17\u00b0E]", "recurrence": 41.1, "ind_score": 6, "label": "industrial", "tier": "high"}, {"id": "CG-19", "name": "Cluster #19", "lat": 21.1956, "lon": 81.4162, "detections": 67, "frp": 3.8, "distance_m": 1173.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.2\u00b0N, 81.42\u00b0E]", "recurrence": 5.7, "ind_score": 3, "label": "uncertain", "tier": "high"}, {"id": "CG-23", "name": "Cluster #23", "lat": 21.94, "lon": 81.9812, "detections": 37, "frp": 0.8, "distance_m": 4199.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.94\u00b0N, 81.98\u00b0E]", "recurrence": 4.0, "ind_score": 3, "label": "uncertain", "tier": "high"}, {"id": "CG-24", "name": "Cluster #24", "lat": 21.1866, "lon": 81.3876, "detections": 341, "frp": 2.3, "distance_m": 99.0, "facility": "man_made=works", "location_name": "Chhattisgarh Corridor [21.19\u00b0N, 81.39\u00b0E]", "recurrence": 28.8, "ind_score": 8, "label": "industrial", "tier": "high"}, {"id": "CG-25", "name": "Cluster #25", "lat": 21.8768, "lon": 83.4947, "detections": 83, "frp": 1.2, "distance_m": 98.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.88\u00b0N, 83.49\u00b0E]", "recurrence": 7.7, "ind_score": 5, "label": "industrial", "tier": "high"}, {"id": "CG-26", "name": "Cluster #26", "lat": 21.8794, "lon": 83.5527, "detections": 150, "frp": 1.3, "distance_m": 148.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.88\u00b0N, 83.55\u00b0E]", "recurrence": 13.7, "ind_score": 5, "label": "industrial", "tier": "high"}, {"id": "VIIRS-77402", "name": "Raipur Forest Perimeter", "lat": 21.2514, "lon": 81.6296, "detections": 164, "frp": 42.8, "distance_m": 4800.0, "facility": "Zoned Buffer Area", "location_name": "Raipur, Chhattisgarh", "recurrence": 8.2, "ind_score": 3, "label": "wildfire", "tier": "high", "alert_headline": "Moderate Fire", "alert_sub": "Forest Adjacent Area", "time_ago": "1h ago"}, {"id": "VIIRS-55912", "name": "Rajasthan Mineral Belt", "lat": 26.9124, "lon": 75.7873, "detections": 94, "frp": 28.5, "distance_m": 5400.0, "facility": "Quarry & Stone Processing", "location_name": "Rajasthan Corridor", "recurrence": 6.4, "ind_score": 4, "label": "uncertain", "tier": "high", "alert_headline": "Risk Assessment Updated", "alert_sub": "Z-Score: 3.2", "time_ago": "3h ago"}, {"id": "CG-5", "name": "Cluster #5", "lat": 21.6229, "lon": 81.7929, "detections": 58, "frp": 0.9, "distance_m": 1999.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.62\u00b0N, 81.79\u00b0E]", "recurrence": 6.8, "ind_score": 2, "label": "uncertain", "tier": "high"}, {"id": "CG-17", "name": "Cluster #17", "lat": 17.9577, "lon": 80.789, "detections": 105, "frp": 1.8, "distance_m": 1732.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [17.96\u00b0N, 80.79\u00b0E]", "recurrence": 9.3, "ind_score": 2, "label": "uncertain", "tier": "moderate"}, {"id": "CG-20", "name": "Cluster #20", "lat": 21.8024, "lon": 82.039, "detections": 92, "frp": 1.3, "distance_m": 9376.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.8\u00b0N, 82.04\u00b0E]", "recurrence": 8.4, "ind_score": 1, "label": "uncertain", "tier": "moderate"}, {"id": "CG-27", "name": "Cluster #27", "lat": 21.9227, "lon": 83.3478, "detections": 600, "frp": 3.0, "distance_m": 819.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.92\u00b0N, 83.35\u00b0E]", "recurrence": 50.8, "ind_score": 6, "label": "industrial", "tier": "moderate"}, {"id": "CG-28", "name": "Cluster #28", "lat": 21.6791, "lon": 84.0385, "detections": 359, "frp": 2.3, "distance_m": 587.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.68\u00b0N, 84.04\u00b0E]", "recurrence": 31.8, "ind_score": 6, "label": "industrial", "tier": "moderate"}, {"id": "CG-29", "name": "Cluster #29", "lat": 21.3468, "lon": 81.6666, "detections": 169, "frp": 1.4, "distance_m": 982.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.35\u00b0N, 81.67\u00b0E]", "recurrence": 15.5, "ind_score": 6, "label": "industrial", "tier": "moderate"}, {"id": "CG-30", "name": "Cluster #30", "lat": 21.6055, "lon": 81.8232, "detections": 7, "frp": 0.7, "distance_m": 5663.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.61\u00b0N, 81.82\u00b0E]", "recurrence": 1.0, "ind_score": 1, "label": "wildfire", "tier": "moderate"}, {"id": "CG-31", "name": "Cluster #31", "lat": 22.0413, "lon": 83.733, "detections": 1159, "frp": 4.7, "distance_m": 2370.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [22.04\u00b0N, 83.73\u00b0E]", "recurrence": 105.7, "ind_score": 4, "label": "uncertain", "tier": "moderate"}, {"id": "CG-32", "name": "Cluster #32", "lat": 22.0879, "lon": 83.1169, "detections": 133, "frp": 1.9, "distance_m": 1026.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [22.09\u00b0N, 83.12\u00b0E]", "recurrence": 11.7, "ind_score": 2, "label": "uncertain", "tier": "moderate"}, {"id": "CG-34", "name": "Cluster #34", "lat": 21.1908, "lon": 81.1984, "detections": 28, "frp": 0.9, "distance_m": 741.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.19\u00b0N, 81.2\u00b0E]", "recurrence": 3.2, "ind_score": 4, "label": "uncertain", "tier": "moderate"}, {"id": "CG-35", "name": "Cluster #35", "lat": 21.5594, "lon": 81.7516, "detections": 49, "frp": 1.1, "distance_m": 98.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.56\u00b0N, 81.75\u00b0E]", "recurrence": 4.5, "ind_score": 5, "label": "industrial", "tier": "moderate"}, {"id": "CG-37", "name": "Cluster #37", "lat": 21.7318, "lon": 82.2133, "detections": 74, "frp": 1.2, "distance_m": 58.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.73\u00b0N, 82.21\u00b0E]", "recurrence": 6.8, "ind_score": 5, "label": "industrial", "tier": "moderate"}, {"id": "CG-39", "name": "Cluster #39", "lat": 21.7637, "lon": 84.0207, "detections": 746, "frp": 2.2, "distance_m": 416.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.76\u00b0N, 84.02\u00b0E]", "recurrence": 64.5, "ind_score": 7, "label": "industrial", "tier": "moderate"}, {"id": "CG-41", "name": "Cluster #41", "lat": 22.0661, "lon": 83.7044, "detections": 102, "frp": 1.1, "distance_m": 2049.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [22.07\u00b0N, 83.7\u00b0E]", "recurrence": 9.4, "ind_score": 2, "label": "uncertain", "tier": "moderate"}, {"id": "CG-42", "name": "Cluster #42", "lat": 21.5019, "lon": 81.8092, "detections": 27, "frp": 1.4, "distance_m": 1186.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.5\u00b0N, 81.81\u00b0E]", "recurrence": 4.6, "ind_score": 3, "label": "uncertain", "tier": "moderate"}, {"id": "CG-45", "name": "Cluster #45", "lat": 21.9879, "lon": 82.0145, "detections": 31, "frp": 0.6, "distance_m": 1896.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.99\u00b0N, 82.01\u00b0E]", "recurrence": 3.1, "ind_score": 4, "label": "uncertain", "tier": "moderate"}, {"id": "CG-47", "name": "Cluster #47", "lat": 22.0182, "lon": 83.7547, "detections": 163, "frp": 1.7, "distance_m": 1576.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [22.02\u00b0N, 83.75\u00b0E]", "recurrence": 16.7, "ind_score": 3, "label": "uncertain", "tier": "moderate"}, {"id": "CG-48", "name": "Cluster #48", "lat": 21.7768, "lon": 83.8302, "detections": 230, "frp": 1.6, "distance_m": 1083.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.78\u00b0N, 83.83\u00b0E]", "recurrence": 26.3, "ind_score": 6, "label": "industrial", "tier": "moderate"}, {"id": "CG-49", "name": "Cluster #49", "lat": 21.8593, "lon": 83.966, "detections": 64, "frp": 1.2, "distance_m": 283.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.86\u00b0N, 83.97\u00b0E]", "recurrence": 7.6, "ind_score": 4, "label": "uncertain", "tier": "moderate"}, {"id": "CG-50", "name": "Cluster #50", "lat": 24.0111, "lon": 80.5291, "detections": 26, "frp": 0.8, "distance_m": 99.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [24.01\u00b0N, 80.53\u00b0E]", "recurrence": 4.1, "ind_score": 4, "label": "uncertain", "tier": "moderate"}, {"id": "CG-52", "name": "Cluster #52", "lat": 21.7341, "lon": 83.9811, "detections": 74, "frp": 1.2, "distance_m": 635.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.73\u00b0N, 83.98\u00b0E]", "recurrence": 8.9, "ind_score": 3, "label": "uncertain", "tier": "moderate"}, {"id": "CG-53", "name": "Cluster #53", "lat": 21.2146, "lon": 82.1357, "detections": 58, "frp": 1.0, "distance_m": 13238.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.21\u00b0N, 82.14\u00b0E]", "recurrence": 7.0, "ind_score": 1, "label": "uncertain", "tier": "moderate"}, {"id": "CG-55", "name": "Cluster #55", "lat": 21.8018, "lon": 83.8837, "detections": 30, "frp": 1.4, "distance_m": 1348.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.8\u00b0N, 83.88\u00b0E]", "recurrence": 4.0, "ind_score": 4, "label": "uncertain", "tier": "moderate"}, {"id": "CG-56", "name": "Cluster #56", "lat": 22.1559, "lon": 82.0939, "detections": 72, "frp": 0.9, "distance_m": 3629.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [22.16\u00b0N, 82.09\u00b0E]", "recurrence": 8.4, "ind_score": 2, "label": "uncertain", "tier": "moderate"}, {"id": "CG-57", "name": "Cluster #57", "lat": 22.0185, "lon": 82.1791, "detections": 46, "frp": 1.0, "distance_m": 819.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [22.02\u00b0N, 82.18\u00b0E]", "recurrence": 5.8, "ind_score": 4, "label": "uncertain", "tier": "moderate"}, {"id": "CG-58", "name": "Cluster #58", "lat": 21.7501, "lon": 83.8161, "detections": 103, "frp": 2.0, "distance_m": 2119.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.75\u00b0N, 83.82\u00b0E]", "recurrence": 13.3, "ind_score": 4, "label": "uncertain", "tier": "moderate"}, {"id": "CG-60", "name": "Cluster #60", "lat": 21.7166, "lon": 84.042, "detections": 51, "frp": 1.7, "distance_m": 228.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.72\u00b0N, 84.04\u00b0E]", "recurrence": 6.7, "ind_score": 4, "label": "uncertain", "tier": "moderate"}, {"id": "CG-61", "name": "Cluster #61", "lat": 21.8418, "lon": 83.9813, "detections": 74, "frp": 1.0, "distance_m": 425.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.84\u00b0N, 83.98\u00b0E]", "recurrence": 11.7, "ind_score": 5, "label": "industrial", "tier": "moderate"}, {"id": "CG-62", "name": "Cluster #62", "lat": 21.7503, "lon": 83.9745, "detections": 137, "frp": 2.1, "distance_m": 2497.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.75\u00b0N, 83.97\u00b0E]", "recurrence": 18.7, "ind_score": 3, "label": "uncertain", "tier": "moderate"}, {"id": "CG-63", "name": "Cluster #63", "lat": 22.0191, "lon": 83.3376, "detections": 52, "frp": 0.9, "distance_m": 1818.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [22.02\u00b0N, 83.34\u00b0E]", "recurrence": 8.3, "ind_score": 4, "label": "uncertain", "tier": "moderate"}, {"id": "CG-65", "name": "Cluster #65", "lat": 21.8214, "lon": 83.9954, "detections": 95, "frp": 1.2, "distance_m": 387.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.82\u00b0N, 84.0\u00b0E]", "recurrence": 13.1, "ind_score": 5, "label": "industrial", "tier": "moderate"}, {"id": "CG-66", "name": "Cluster #66", "lat": 22.1071, "lon": 83.5237, "detections": 21, "frp": 1.0, "distance_m": 284.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [22.11\u00b0N, 83.52\u00b0E]", "recurrence": 4.9, "ind_score": 3, "label": "uncertain", "tier": "moderate"}, {"id": "CG-68", "name": "Cluster #68", "lat": 21.459, "lon": 81.8005, "detections": 39, "frp": 0.8, "distance_m": 2048.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.46\u00b0N, 81.8\u00b0E]", "recurrence": 7.7, "ind_score": 4, "label": "uncertain", "tier": "moderate"}, {"id": "CG-70", "name": "Cluster #70", "lat": 21.194, "lon": 81.2097, "detections": 28, "frp": 1.0, "distance_m": 310.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.19\u00b0N, 81.21\u00b0E]", "recurrence": 4.5, "ind_score": 4, "label": "uncertain", "tier": "moderate"}, {"id": "CG-72", "name": "Cluster #72", "lat": 21.5769, "lon": 82.0225, "detections": 24, "frp": 1.8, "distance_m": 197.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.58\u00b0N, 82.02\u00b0E]", "recurrence": 4.0, "ind_score": 5, "label": "industrial", "tier": "moderate"}, {"id": "CG-74", "name": "Cluster #74", "lat": 21.6987, "lon": 84.0318, "detections": 27, "frp": 0.9, "distance_m": 367.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.7\u00b0N, 84.03\u00b0E]", "recurrence": 4.5, "ind_score": 4, "label": "uncertain", "tier": "moderate"}, {"id": "CG-78", "name": "Cluster #78", "lat": 21.761, "lon": 81.5796, "detections": 5, "frp": 4.8, "distance_m": 18546.0, "facility": "power=plant", "location_name": "Chhattisgarh Corridor [21.76\u00b0N, 81.58\u00b0E]", "recurrence": 5.0, "ind_score": 1, "label": "wildfire", "tier": "moderate"}, {"id": "CG-79", "name": "Cluster #79", "lat": 22.324, "lon": 82.6734, "detections": 29, "frp": 0.9, "distance_m": 808.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [22.32\u00b0N, 82.67\u00b0E]", "recurrence": 5.3, "ind_score": 3, "label": "uncertain", "tier": "moderate"}, {"id": "CG-81", "name": "Cluster #81", "lat": 23.4301, "lon": 80.2369, "detections": 3, "frp": 4.2, "distance_m": 8634.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [23.43\u00b0N, 80.24\u00b0E]", "recurrence": 3.0, "ind_score": 1, "label": "wildfire", "tier": "moderate"}, {"id": "CG-82", "name": "Cluster #82", "lat": 23.443, "lon": 80.2056, "detections": 5, "frp": 3.7, "distance_m": 5403.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [23.44\u00b0N, 80.21\u00b0E]", "recurrence": 5.0, "ind_score": 0, "label": "uncertain", "tier": "moderate"}, {"id": "CG-83", "name": "Cluster #83", "lat": 21.4429, "lon": 81.2162, "detections": 7, "frp": 6.1, "distance_m": 8218.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.44\u00b0N, 81.22\u00b0E]", "recurrence": 1.5, "ind_score": 1, "label": "wildfire", "tier": "moderate"}, {"id": "CG-84", "name": "Cluster #84", "lat": 21.742, "lon": 81.4636, "detections": 5, "frp": 4.5, "distance_m": 27058.0, "facility": "power=plant", "location_name": "Chhattisgarh Corridor [21.74\u00b0N, 81.46\u00b0E]", "recurrence": 1.1, "ind_score": 1, "label": "wildfire", "tier": "moderate"}, {"id": "CG-87", "name": "Cluster #87", "lat": 21.731, "lon": 83.823, "detections": 16, "frp": 1.3, "distance_m": 2149.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.73\u00b0N, 83.82\u00b0E]", "recurrence": 4.1, "ind_score": 3, "label": "uncertain", "tier": "moderate"}, {"id": "CG-88", "name": "Cluster #88", "lat": 21.9866, "lon": 83.3659, "detections": 21, "frp": 0.6, "distance_m": 1722.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.99\u00b0N, 83.37\u00b0E]", "recurrence": 5.7, "ind_score": 3, "label": "uncertain", "tier": "moderate"}, {"id": "CG-89", "name": "Cluster #89", "lat": 22.3367, "lon": 82.5539, "detections": 61, "frp": 1.6, "distance_m": 2150.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [22.34\u00b0N, 82.55\u00b0E]", "recurrence": 10.1, "ind_score": 3, "label": "uncertain", "tier": "moderate"}, {"id": "CG-90", "name": "Cluster #90", "lat": 22.1865, "lon": 82.1217, "detections": 10, "frp": 0.5, "distance_m": 7051.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [22.19\u00b0N, 82.12\u00b0E]", "recurrence": 2.6, "ind_score": 1, "label": "wildfire", "tier": "moderate"}, {"id": "CG-91", "name": "Cluster #91", "lat": 21.7405, "lon": 81.4849, "detections": 7, "frp": 3.5, "distance_m": 25944.0, "facility": "power=plant", "location_name": "Chhattisgarh Corridor [21.74\u00b0N, 81.48\u00b0E]", "recurrence": 1.5, "ind_score": 0, "label": "wildfire", "tier": "moderate"}, {"id": "CG-94", "name": "Cluster #94", "lat": 21.9007, "lon": 83.9811, "detections": 17, "frp": 0.7, "distance_m": 425.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.9\u00b0N, 83.98\u00b0E]", "recurrence": 3.2, "ind_score": 3, "label": "uncertain", "tier": "moderate"}, {"id": "CG-95", "name": "Cluster #95", "lat": 20.2861, "lon": 81.8293, "detections": 5, "frp": 4.1, "distance_m": 54467.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.29\u00b0N, 81.83\u00b0E]", "recurrence": 5.0, "ind_score": 1, "label": "wildfire", "tier": "moderate"}, {"id": "CG-96", "name": "Cluster #96", "lat": 21.3354, "lon": 82.042, "detections": 7, "frp": 7.4, "distance_m": 16047.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.34\u00b0N, 82.04\u00b0E]", "recurrence": 2.1, "ind_score": 1, "label": "wildfire", "tier": "moderate"}, {"id": "CG-97", "name": "Cluster #97", "lat": 21.5696, "lon": 81.393, "detections": 6, "frp": 19.2, "distance_m": 8278.0, "facility": "power=plant", "location_name": "Chhattisgarh Corridor [21.57\u00b0N, 81.39\u00b0E]", "recurrence": 1.1, "ind_score": 0, "label": "wildfire", "tier": "moderate"}, {"id": "CG-98", "name": "Cluster #98", "lat": 21.7895, "lon": 81.4586, "detections": 7, "frp": 3.6, "distance_m": 23889.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.79\u00b0N, 81.46\u00b0E]", "recurrence": 7.0, "ind_score": 1, "label": "uncertain", "tier": "moderate"}, {"id": "VIIRS-66109", "name": "Jalna Rural Zone", "lat": 19.8347, "lon": 75.8816, "detections": 48, "frp": 12.4, "distance_m": 9200.0, "facility": "Agricultural Perimeter", "location_name": "Jalna, Maharashtra", "recurrence": 2.1, "ind_score": 1, "label": "uncertain", "tier": "moderate", "alert_headline": "New Hotspot Detected", "alert_sub": "Non-Industrial Area", "time_ago": "2h ago"}, {"id": "CG-33", "name": "Cluster #33", "lat": 22.1069, "lon": 83.1244, "detections": 14, "frp": 1.1, "distance_m": 1728.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [22.11\u00b0N, 83.12\u00b0E]", "recurrence": 2.0, "ind_score": 2, "label": "uncertain", "tier": "moderate"}, {"id": "CG-36", "name": "Cluster #36", "lat": 21.6312, "lon": 82.1119, "detections": 18, "frp": 0.9, "distance_m": 204.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.63\u00b0N, 82.11\u00b0E]", "recurrence": 2.5, "ind_score": 4, "label": "uncertain", "tier": "moderate"}, {"id": "CG-38", "name": "Cluster #38", "lat": 18.5415, "lon": 83.3415, "detections": 21, "frp": 1.2, "distance_m": 1016.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [18.54\u00b0N, 83.34\u00b0E]", "recurrence": 2.2, "ind_score": 3, "label": "uncertain", "tier": "normal"}, {"id": "CG-40", "name": "Cluster #40", "lat": 21.9718, "lon": 83.2001, "detections": 5, "frp": 0.7, "distance_m": 3563.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.97\u00b0N, 83.2\u00b0E]", "recurrence": 0.7, "ind_score": 3, "label": "uncertain", "tier": "normal"}, {"id": "CG-43", "name": "Cluster #43", "lat": 21.246, "lon": 81.7697, "detections": 33, "frp": 1.0, "distance_m": 129.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.25\u00b0N, 81.77\u00b0E]", "recurrence": 2.9, "ind_score": 6, "label": "industrial", "tier": "normal"}, {"id": "CG-44", "name": "Cluster #44", "lat": 21.2951, "lon": 81.5937, "detections": 25, "frp": 0.6, "distance_m": 283.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.3\u00b0N, 81.59\u00b0E]", "recurrence": 2.3, "ind_score": 5, "label": "industrial", "tier": "normal"}, {"id": "CG-46", "name": "Cluster #46", "lat": 21.9552, "lon": 83.8062, "detections": 15, "frp": 1.0, "distance_m": 1961.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.96\u00b0N, 83.81\u00b0E]", "recurrence": 1.6, "ind_score": 2, "label": "uncertain", "tier": "normal"}, {"id": "CG-51", "name": "Cluster #51", "lat": 21.2401, "lon": 81.3854, "detections": 14, "frp": 0.8, "distance_m": 283.0, "facility": "industrial=factory", "location_name": "Chhattisgarh Corridor [21.24\u00b0N, 81.39\u00b0E]", "recurrence": 2.1, "ind_score": 5, "label": "industrial", "tier": "normal"}, {"id": "CG-54", "name": "Cluster #54", "lat": 21.5438, "lon": 81.947, "detections": 13, "frp": 1.1, "distance_m": 292.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.54\u00b0N, 81.95\u00b0E]", "recurrence": 1.7, "ind_score": 4, "label": "uncertain", "tier": "normal"}, {"id": "CG-59", "name": "Cluster #59", "lat": 21.7952, "lon": 83.9887, "detections": 23, "frp": 0.9, "distance_m": 587.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.8\u00b0N, 83.99\u00b0E]", "recurrence": 3.0, "ind_score": 4, "label": "uncertain", "tier": "normal"}, {"id": "CG-64", "name": "Cluster #64", "lat": 21.3849, "lon": 81.6883, "detections": 5, "frp": 0.7, "distance_m": 1326.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.38\u00b0N, 81.69\u00b0E]", "recurrence": 1.3, "ind_score": 4, "label": "uncertain", "tier": "normal"}, {"id": "CG-67", "name": "Cluster #67", "lat": 20.1223, "lon": 83.2302, "detections": 6, "frp": 4.5, "distance_m": 304.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.12\u00b0N, 83.23\u00b0E]", "recurrence": 1.8, "ind_score": 5, "label": "industrial", "tier": "normal"}, {"id": "CG-69", "name": "Cluster #69", "lat": 19.3339, "lon": 83.4285, "detections": 10, "frp": 0.8, "distance_m": 481.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [19.33\u00b0N, 83.43\u00b0E]", "recurrence": 2.3, "ind_score": 4, "label": "uncertain", "tier": "normal"}, {"id": "CG-71", "name": "Cluster #71", "lat": 21.1547, "lon": 81.1724, "detections": 5, "frp": 2.7, "distance_m": 282.0, "facility": "power=plant", "location_name": "Chhattisgarh Corridor [21.15\u00b0N, 81.17\u00b0E]", "recurrence": 1.5, "ind_score": 4, "label": "uncertain", "tier": "normal"}, {"id": "CG-73", "name": "Cluster #73", "lat": 21.5745, "lon": 81.7345, "detections": 13, "frp": 0.9, "distance_m": 2978.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.57\u00b0N, 81.73\u00b0E]", "recurrence": 2.4, "ind_score": 3, "label": "uncertain", "tier": "normal"}, {"id": "CG-75", "name": "Cluster #75", "lat": 22.0099, "lon": 83.3278, "detections": 7, "frp": 0.7, "distance_m": 600.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [22.01\u00b0N, 83.33\u00b0E]", "recurrence": 3.0, "ind_score": 4, "label": "uncertain", "tier": "normal"}, {"id": "CG-76", "name": "Cluster #76", "lat": 22.0241, "lon": 83.3073, "detections": 11, "frp": 0.6, "distance_m": 597.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [22.02\u00b0N, 83.31\u00b0E]", "recurrence": 3.0, "ind_score": 4, "label": "uncertain", "tier": "normal"}, {"id": "CG-77", "name": "Cluster #77", "lat": 22.0717, "lon": 83.3485, "detections": 8, "frp": 0.3, "distance_m": 1461.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [22.07\u00b0N, 83.35\u00b0E]", "recurrence": 1.7, "ind_score": 2, "label": "uncertain", "tier": "normal"}, {"id": "CG-80", "name": "Cluster #80", "lat": 23.439, "lon": 80.2385, "detections": 9, "frp": 5.6, "distance_m": 8952.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [23.44\u00b0N, 80.24\u00b0E]", "recurrence": 1.9, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-85", "name": "Cluster #85", "lat": 23.4499, "lon": 80.2357, "detections": 9, "frp": 5.6, "distance_m": 7532.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [23.45\u00b0N, 80.24\u00b0E]", "recurrence": 2.0, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-86", "name": "Cluster #86", "lat": 21.3553, "lon": 81.3168, "detections": 10, "frp": 15.5, "distance_m": 554.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.36\u00b0N, 81.32\u00b0E]", "recurrence": 1.7, "ind_score": 2, "label": "uncertain", "tier": "normal"}, {"id": "CG-92", "name": "Cluster #92", "lat": 22.0626, "lon": 83.3331, "detections": 8, "frp": 1.0, "distance_m": 709.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [22.06\u00b0N, 83.33\u00b0E]", "recurrence": 3.0, "ind_score": 4, "label": "uncertain", "tier": "normal"}, {"id": "CG-93", "name": "Cluster #93", "lat": 21.8367, "lon": 84.1305, "detections": 8, "frp": 0.9, "distance_m": 785.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.84\u00b0N, 84.13\u00b0E]", "recurrence": 3.0, "ind_score": 2, "label": "uncertain", "tier": "normal"}, {"id": "CG-99", "name": "Cluster #99", "lat": 21.3121, "lon": 82.1106, "detections": 12, "frp": 6.3, "distance_m": 19910.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.31\u00b0N, 82.11\u00b0E]", "recurrence": 2.1, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-100", "name": "Cluster #100", "lat": 21.6225, "lon": 81.7394, "detections": 5, "frp": 3.6, "distance_m": 3570.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.62\u00b0N, 81.74\u00b0E]", "recurrence": 2.1, "ind_score": 3, "label": "uncertain", "tier": "normal"}, {"id": "CG-101", "name": "Cluster #101", "lat": 21.7206, "lon": 81.4676, "detections": 10, "frp": 3.5, "distance_m": 25445.0, "facility": "power=plant", "location_name": "Chhattisgarh Corridor [21.72\u00b0N, 81.47\u00b0E]", "recurrence": 2.3, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-102", "name": "Cluster #102", "lat": 18.5095, "lon": 83.9372, "detections": 5, "frp": 6.8, "distance_m": 15175.0, "facility": "man_made=works", "location_name": "Chhattisgarh Corridor [18.51\u00b0N, 83.94\u00b0E]", "recurrence": 0.9, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-103", "name": "Cluster #103", "lat": 20.3929, "lon": 83.3538, "detections": 6, "frp": 3.5, "distance_m": 5120.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.39\u00b0N, 83.35\u00b0E]", "recurrence": 2.8, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-104", "name": "Cluster #104", "lat": 20.7811, "lon": 83.8923, "detections": 6, "frp": 4.1, "distance_m": 566.0, "facility": "power=plant", "location_name": "Chhattisgarh Corridor [20.78\u00b0N, 83.89\u00b0E]", "recurrence": 5.6, "ind_score": 3, "label": "uncertain", "tier": "normal"}, {"id": "CG-105", "name": "Cluster #105", "lat": 21.0278, "lon": 82.0932, "detections": 5, "frp": 4.1, "distance_m": 6137.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.03\u00b0N, 82.09\u00b0E]", "recurrence": 5.0, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-106", "name": "Cluster #106", "lat": 21.1564, "lon": 83.5099, "detections": 6, "frp": 4.0, "distance_m": 224.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.16\u00b0N, 83.51\u00b0E]", "recurrence": 5.6, "ind_score": 4, "label": "uncertain", "tier": "normal"}, {"id": "CG-107", "name": "Cluster #107", "lat": 21.29, "lon": 82.0681, "detections": 6, "frp": 19.9, "distance_m": 15974.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.29\u00b0N, 82.07\u00b0E]", "recurrence": 1.1, "ind_score": 0, "label": "wildfire", "tier": "normal"}, {"id": "CG-108", "name": "Cluster #108", "lat": 21.4816, "lon": 81.6352, "detections": 5, "frp": 6.5, "distance_m": 9814.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.48\u00b0N, 81.64\u00b0E]", "recurrence": 0.9, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-109", "name": "Cluster #109", "lat": 21.746, "lon": 82.9719, "detections": 21, "frp": 4.3, "distance_m": 10102.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.75\u00b0N, 82.97\u00b0E]", "recurrence": 3.7, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-110", "name": "Cluster #110", "lat": 21.716, "lon": 81.3887, "detections": 7, "frp": 4.4, "distance_m": 24567.0, "facility": "power=plant", "location_name": "Chhattisgarh Corridor [21.72\u00b0N, 81.39\u00b0E]", "recurrence": 1.6, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-111", "name": "Cluster #111", "lat": 21.9295, "lon": 82.2556, "detections": 6, "frp": 5.4, "distance_m": 6253.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.93\u00b0N, 82.26\u00b0E]", "recurrence": 2.2, "ind_score": 0, "label": "wildfire", "tier": "normal"}, {"id": "CG-112", "name": "Cluster #112", "lat": 21.9456, "lon": 82.2479, "detections": 8, "frp": 5.5, "distance_m": 6826.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.95\u00b0N, 82.25\u00b0E]", "recurrence": 8.0, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-113", "name": "Cluster #113", "lat": 20.9786, "lon": 82.0215, "detections": 7, "frp": 5.9, "distance_m": 6682.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.98\u00b0N, 82.02\u00b0E]", "recurrence": 7.0, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-114", "name": "Cluster #114", "lat": 21.6213, "lon": 81.4889, "detections": 5, "frp": 4.5, "distance_m": 15901.0, "facility": "power=plant", "location_name": "Chhattisgarh Corridor [21.62\u00b0N, 81.49\u00b0E]", "recurrence": 5.0, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-115", "name": "Cluster #115", "lat": 21.6266, "lon": 81.4911, "detections": 5, "frp": 4.1, "distance_m": 16478.0, "facility": "power=plant", "location_name": "Chhattisgarh Corridor [21.63\u00b0N, 81.49\u00b0E]", "recurrence": 5.0, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-116", "name": "Cluster #116", "lat": 21.8239, "lon": 81.8538, "detections": 5, "frp": 4.7, "distance_m": 13930.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.82\u00b0N, 81.85\u00b0E]", "recurrence": 5.0, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-117", "name": "Cluster #117", "lat": 20.8119, "lon": 81.8152, "detections": 5, "frp": 7.2, "distance_m": 10396.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.81\u00b0N, 81.82\u00b0E]", "recurrence": 5.0, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-118", "name": "Cluster #118", "lat": 20.7468, "lon": 81.917, "detections": 5, "frp": 4.9, "distance_m": 22506.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.75\u00b0N, 81.92\u00b0E]", "recurrence": 5.0, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-119", "name": "Cluster #119", "lat": 20.7936, "lon": 81.8767, "detections": 5, "frp": 3.0, "distance_m": 16695.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.79\u00b0N, 81.88\u00b0E]", "recurrence": 5.0, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-120", "name": "Cluster #120", "lat": 20.8475, "lon": 81.9718, "detections": 17, "frp": 5.6, "distance_m": 19014.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.85\u00b0N, 81.97\u00b0E]", "recurrence": 3.1, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-121", "name": "Cluster #121", "lat": 20.8609, "lon": 81.9636, "detections": 35, "frp": 9.7, "distance_m": 17777.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.86\u00b0N, 81.96\u00b0E]", "recurrence": 6.4, "ind_score": 0, "label": "uncertain", "tier": "normal"}, {"id": "CG-122", "name": "Cluster #122", "lat": 20.8717, "lon": 81.982, "detections": 8, "frp": 9.1, "distance_m": 17511.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.87\u00b0N, 81.98\u00b0E]", "recurrence": 1.5, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-123", "name": "Cluster #123", "lat": 21.0661, "lon": 82.0251, "detections": 5, "frp": 3.5, "distance_m": 3340.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.07\u00b0N, 82.03\u00b0E]", "recurrence": 0.9, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-124", "name": "Cluster #124", "lat": 21.0701, "lon": 82.0648, "detections": 7, "frp": 3.0, "distance_m": 4919.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.07\u00b0N, 82.06\u00b0E]", "recurrence": 1.3, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-125", "name": "Cluster #125", "lat": 21.0821, "lon": 82.0987, "detections": 7, "frp": 7.3, "distance_m": 8302.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.08\u00b0N, 82.1\u00b0E]", "recurrence": 7.0, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-126", "name": "Cluster #126", "lat": 21.0969, "lon": 82.3119, "detections": 7, "frp": 5.2, "distance_m": 17231.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.1\u00b0N, 82.31\u00b0E]", "recurrence": 7.0, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-127", "name": "Cluster #127", "lat": 21.1757, "lon": 81.9946, "detections": 6, "frp": 4.2, "distance_m": 4624.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.18\u00b0N, 81.99\u00b0E]", "recurrence": 6.0, "ind_score": 2, "label": "uncertain", "tier": "normal"}, {"id": "CG-128", "name": "Cluster #128", "lat": 21.1869, "lon": 82.0615, "detections": 5, "frp": 5.9, "distance_m": 5146.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.19\u00b0N, 82.06\u00b0E]", "recurrence": 5.0, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-129", "name": "Cluster #129", "lat": 21.199, "lon": 82.2813, "detections": 9, "frp": 5.2, "distance_m": 21763.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.2\u00b0N, 82.28\u00b0E]", "recurrence": 9.0, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-130", "name": "Cluster #130", "lat": 21.1997, "lon": 82.306, "detections": 9, "frp": 6.5, "distance_m": 19821.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.2\u00b0N, 82.31\u00b0E]", "recurrence": 9.0, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-131", "name": "Cluster #131", "lat": 21.2556, "lon": 82.8256, "detections": 5, "frp": 7.6, "distance_m": 3197.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.26\u00b0N, 82.83\u00b0E]", "recurrence": 5.0, "ind_score": 2, "label": "uncertain", "tier": "normal"}, {"id": "CG-132", "name": "Cluster #132", "lat": 21.6975, "lon": 81.6996, "detections": 5, "frp": 6.5, "distance_m": 7079.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.7\u00b0N, 81.7\u00b0E]", "recurrence": 5.0, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-133", "name": "Cluster #133", "lat": 21.7061, "lon": 82.7011, "detections": 7, "frp": 4.5, "distance_m": 5314.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.71\u00b0N, 82.7\u00b0E]", "recurrence": 4.2, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-134", "name": "Cluster #134", "lat": 21.8696, "lon": 82.4763, "detections": 6, "frp": 4.6, "distance_m": 11120.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.87\u00b0N, 82.48\u00b0E]", "recurrence": 6.0, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-135", "name": "Cluster #135", "lat": 22.2448, "lon": 82.2771, "detections": 7, "frp": 15.8, "distance_m": 12720.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [22.24\u00b0N, 82.28\u00b0E]", "recurrence": 1.7, "ind_score": 0, "label": "wildfire", "tier": "normal"}, {"id": "CG-136", "name": "Cluster #136", "lat": 21.4934, "lon": 81.8103, "detections": 7, "frp": 0.6, "distance_m": 1430.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.49\u00b0N, 81.81\u00b0E]", "recurrence": 2.1, "ind_score": 4, "label": "uncertain", "tier": "normal"}, {"id": "CG-137", "name": "Cluster #137", "lat": 20.8224, "lon": 81.9297, "detections": 11, "frp": 9.6, "distance_m": 20075.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.82\u00b0N, 81.93\u00b0E]", "recurrence": 2.0, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-138", "name": "Cluster #138", "lat": 20.8653, "lon": 82.1255, "detections": 10, "frp": 13.3, "distance_m": 10487.0, "facility": "man_made=works", "location_name": "Chhattisgarh Corridor [20.87\u00b0N, 82.13\u00b0E]", "recurrence": 10.0, "ind_score": 0, "label": "uncertain", "tier": "normal"}, {"id": "CG-139", "name": "Cluster #139", "lat": 20.927, "lon": 82.007, "detections": 11, "frp": 14.7, "distance_m": 12625.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.93\u00b0N, 82.01\u00b0E]", "recurrence": 2.1, "ind_score": 0, "label": "wildfire", "tier": "normal"}, {"id": "CG-140", "name": "Cluster #140", "lat": 20.9463, "lon": 81.9692, "detections": 6, "frp": 7.4, "distance_m": 11048.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.95\u00b0N, 81.97\u00b0E]", "recurrence": 1.2, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-141", "name": "Cluster #141", "lat": 21.3504, "lon": 82.567, "detections": 5, "frp": 5.7, "distance_m": 26273.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.35\u00b0N, 82.57\u00b0E]", "recurrence": 5.0, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-142", "name": "Cluster #142", "lat": 21.3726, "lon": 82.6642, "detections": 7, "frp": 4.2, "distance_m": 18143.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.37\u00b0N, 82.66\u00b0E]", "recurrence": 1.3, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-143", "name": "Cluster #143", "lat": 21.7074, "lon": 82.8646, "detections": 8, "frp": 3.6, "distance_m": 7409.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.71\u00b0N, 82.86\u00b0E]", "recurrence": 1.5, "ind_score": 0, "label": "uncertain", "tier": "normal"}, {"id": "CG-144", "name": "Cluster #144", "lat": 21.7092, "lon": 82.8798, "detections": 5, "frp": 10.9, "distance_m": 8677.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.71\u00b0N, 82.88\u00b0E]", "recurrence": 0.9, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-145", "name": "Cluster #145", "lat": 21.7352, "lon": 82.7977, "detections": 7, "frp": 11.5, "distance_m": 1874.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.74\u00b0N, 82.8\u00b0E]", "recurrence": 1.3, "ind_score": 2, "label": "uncertain", "tier": "normal"}, {"id": "CG-146", "name": "Cluster #146", "lat": 21.8997, "lon": 82.5011, "detections": 7, "frp": 12.0, "distance_m": 9676.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.9\u00b0N, 82.5\u00b0E]", "recurrence": 4.4, "ind_score": 0, "label": "uncertain", "tier": "normal"}, {"id": "CG-147", "name": "Cluster #147", "lat": 21.9163, "lon": 82.9533, "detections": 5, "frp": 5.9, "distance_m": 10497.0, "facility": "man_made=works", "location_name": "Chhattisgarh Corridor [21.92\u00b0N, 82.95\u00b0E]", "recurrence": 0.9, "ind_score": 0, "label": "wildfire", "tier": "normal"}, {"id": "CG-148", "name": "Cluster #148", "lat": 20.4815, "lon": 81.4055, "detections": 5, "frp": 4.6, "distance_m": 26819.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.48\u00b0N, 81.41\u00b0E]", "recurrence": 5.0, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-149", "name": "Cluster #149", "lat": 20.8561, "lon": 81.1866, "detections": 7, "frp": 6.5, "distance_m": 29773.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.86\u00b0N, 81.19\u00b0E]", "recurrence": 1.3, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-150", "name": "Cluster #150", "lat": 20.951, "lon": 81.9787, "detections": 8, "frp": 3.4, "distance_m": 11571.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.95\u00b0N, 81.98\u00b0E]", "recurrence": 1.5, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-151", "name": "Cluster #151", "lat": 21.1245, "lon": 82.3012, "detections": 6, "frp": 6.1, "distance_m": 17899.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.12\u00b0N, 82.3\u00b0E]", "recurrence": 6.0, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-152", "name": "Cluster #152", "lat": 21.6602, "lon": 83.3394, "detections": 10, "frp": 9.9, "distance_m": 6241.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.66\u00b0N, 83.34\u00b0E]", "recurrence": 10.0, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-153", "name": "Cluster #153", "lat": 21.7167, "lon": 82.8561, "detections": 10, "frp": 5.8, "distance_m": 6558.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.72\u00b0N, 82.86\u00b0E]", "recurrence": 1.9, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-154", "name": "Cluster #154", "lat": 21.732, "lon": 82.9021, "detections": 6, "frp": 8.9, "distance_m": 10686.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.73\u00b0N, 82.9\u00b0E]", "recurrence": 1.1, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-155", "name": "Cluster #155", "lat": 21.813, "lon": 82.7583, "detections": 6, "frp": 4.8, "distance_m": 10842.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.81\u00b0N, 82.76\u00b0E]", "recurrence": 5.6, "ind_score": 0, "label": "wildfire", "tier": "normal"}, {"id": "CG-156", "name": "Cluster #156", "lat": 22.059, "lon": 82.3806, "detections": 5, "frp": 1.7, "distance_m": 3934.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [22.06\u00b0N, 82.38\u00b0E]", "recurrence": 2.6, "ind_score": 2, "label": "uncertain", "tier": "normal"}, {"id": "CG-157", "name": "Cluster #157", "lat": 20.8323, "lon": 81.937, "detections": 11, "frp": 8.9, "distance_m": 18957.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.83\u00b0N, 81.94\u00b0E]", "recurrence": 2.1, "ind_score": 0, "label": "wildfire", "tier": "normal"}, {"id": "CG-158", "name": "Cluster #158", "lat": 22.0216, "lon": 83.3004, "detections": 5, "frp": 0.7, "distance_m": 332.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [22.02\u00b0N, 83.3\u00b0E]", "recurrence": 1.2, "ind_score": 4, "label": "uncertain", "tier": "normal"}, {"id": "CG-159", "name": "Cluster #159", "lat": 20.7763, "lon": 81.8909, "detections": 5, "frp": 5.6, "distance_m": 18836.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.78\u00b0N, 81.89\u00b0E]", "recurrence": 5.0, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-160", "name": "Cluster #160", "lat": 20.7859, "lon": 81.7722, "detections": 8, "frp": 3.4, "distance_m": 7810.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.79\u00b0N, 81.77\u00b0E]", "recurrence": 8.0, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-161", "name": "Cluster #161", "lat": 20.9602, "lon": 81.9993, "detections": 5, "frp": 3.9, "distance_m": 9478.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.96\u00b0N, 82.0\u00b0E]", "recurrence": 5.0, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-162", "name": "Cluster #162", "lat": 20.9842, "lon": 81.9827, "detections": 6, "frp": 2.2, "distance_m": 7741.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.98\u00b0N, 81.98\u00b0E]", "recurrence": 1.1, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-163", "name": "Cluster #163", "lat": 20.9935, "lon": 81.9365, "detections": 7, "frp": 4.1, "distance_m": 6371.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [20.99\u00b0N, 81.94\u00b0E]", "recurrence": 1.3, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-164", "name": "Cluster #164", "lat": 21.2349, "lon": 82.0939, "detections": 15, "frp": 7.9, "distance_m": 11714.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.23\u00b0N, 82.09\u00b0E]", "recurrence": 11.0, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-165", "name": "Cluster #165", "lat": 21.588, "lon": 83.478, "detections": 5, "frp": 2.8, "distance_m": 6132.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.59\u00b0N, 83.48\u00b0E]", "recurrence": 4.8, "ind_score": 1, "label": "uncertain", "tier": "normal"}, {"id": "CG-166", "name": "Cluster #166", "lat": 21.7297, "lon": 82.8289, "detections": 39, "frp": 16.0, "distance_m": 3495.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.73\u00b0N, 82.83\u00b0E]", "recurrence": 7.3, "ind_score": 2, "label": "uncertain", "tier": "normal"}, {"id": "CG-167", "name": "Cluster #167", "lat": 21.7406, "lon": 82.7722, "detections": 5, "frp": 6.8, "distance_m": 3561.0, "facility": "landuse=quarry", "location_name": "Chhattisgarh Corridor [21.74\u00b0N, 82.77\u00b0E]", "recurrence": 0.9, "ind_score": 2, "label": "uncertain", "tier": "normal"}, {"id": "CG-168", "name": "Cluster #168", "lat": 21.8889, "lon": 82.6825, "detections": 5, "frp": 7.2, "distance_m": 12413.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.89\u00b0N, 82.68\u00b0E]", "recurrence": 5.0, "ind_score": 1, "label": "wildfire", "tier": "normal"}, {"id": "CG-169", "name": "Cluster #169", "lat": 21.3166, "lon": 81.5583, "detections": 5, "frp": 1.7, "distance_m": 2365.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [21.32\u00b0N, 81.56\u00b0E]", "recurrence": 1.0, "ind_score": 3, "label": "uncertain", "tier": "normal"}, {"id": "CG-170", "name": "Cluster #170", "lat": 19.0807, "lon": 82.6743, "detections": 5, "frp": 3.0, "distance_m": 21068.0, "facility": "landuse=industrial", "location_name": "Chhattisgarh Corridor [19.08\u00b0N, 82.67\u00b0E]", "recurrence": 5.0, "ind_score": 1, "label": "wildfire", "tier": "normal"}], "industrial_zones": {"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"fid": 1, "name": "Fake Industrial Zone 1 (Bilaspur)"}, "geometry": {"type": "Polygon", "coordinates": [[[81.97863, 22.16972], [81.99223, 22.16972], [81.99223, 22.18292], [81.97863, 22.18292], [81.97863, 22.16972]]]}}, {"type": "Feature", "properties": {"fid": 2, "name": "Fake Industrial Zone 2 (Bilaspur)"}, "geometry": {"type": "Polygon", "coordinates": [[[82.28964, 21.90506], [82.3059, 21.90506], [82.3059, 21.92389], [82.28964, 21.92389], [82.28964, 21.90506]]]}}, {"type": "Feature", "properties": {"fid": 3, "name": "Fake Industrial Zone 3 (Durg)"}, "geometry": {"type": "Polygon", "coordinates": [[[81.30807, 21.19992], [81.34335, 21.19992], [81.34335, 21.22988], [81.30807, 21.22988], [81.30807, 21.19992]]]}}, {"type": "Feature", "properties": {"fid": 4, "name": "Fake Industrial Zone 4 (Raigarh (steel/power))"}, "geometry": {"type": "Polygon", "coordinates": [[[83.42467, 22.01547], [83.43674, 22.01547], [83.43674, 22.02688], [83.42467, 22.02688], [83.42467, 22.01547]]]}}, {"type": "Feature", "properties": {"fid": 5, "name": "Fake Industrial Zone 5 (Korba (power/coal))"}, "geometry": {"type": "Polygon", "coordinates": [[[82.57912, 22.23036], [82.60417, 22.23036], [82.60417, 22.26089], [82.57912, 22.26089], [82.57912, 22.23036]]]}}, {"type": "Feature", "properties": {"fid": 6, "name": "Fake Industrial Zone 6 (Korba (power/coal))"}, "geometry": {"type": "Polygon", "coordinates": [[[82.80003, 22.38351], [82.83896, 22.38351], [82.83896, 22.41847], [82.80003, 22.41847], [82.80003, 22.38351]]]}}, {"type": "Feature", "properties": {"fid": 7, "name": "Fake Industrial Zone 7 (Raigarh (steel/power))"}, "geometry": {"type": "Polygon", "coordinates": [[[83.20875, 21.80144], [83.24429, 21.80144], [83.24429, 21.8279], [83.20875, 21.8279], [83.20875, 21.80144]]]}}, {"type": "Feature", "properties": {"fid": 8, "name": "Fake Industrial Zone 8 (Raipur (industrial belt))"}, "geometry": {"type": "Polygon", "coordinates": [[[81.70407, 21.06343], [81.71878, 21.06343], [81.71878, 21.07603], [81.70407, 21.07603], [81.70407, 21.06343]]]}}, {"type": "Feature", "properties": {"fid": 9, "name": "Fake Industrial Zone 9 (Raipur (industrial belt))"}, "geometry": {"type": "Polygon", "coordinates": [[[81.76203, 21.19404], [81.79036, 21.19404], [81.79036, 21.21286], [81.76203, 21.21286], [81.76203, 21.19404]]]}}, {"type": "Feature", "properties": {"fid": 10, "name": "Fake Industrial Zone 10 (Korba (power/coal))"}, "geometry": {"type": "Polygon", "coordinates": [[[82.54356, 22.24599], [82.58504, 22.24599], [82.58504, 22.28659], [82.54356, 22.28659], [82.54356, 22.24599]]]}}, {"type": "Feature", "properties": {"fid": 11, "name": "Fake Industrial Zone 11 (Raipur (industrial belt))"}, "geometry": {"type": "Polygon", "coordinates": [[[81.63297, 21.13434], [81.65354, 21.13434], [81.65354, 21.1643], [81.63297, 21.1643], [81.63297, 21.13434]]]}}, {"type": "Feature", "properties": {"fid": 12, "name": "Fake Industrial Zone 12 (Bilaspur)"}, "geometry": {"type": "Polygon", "coordinates": [[[82.14312, 22.13877], [82.18424, 22.13877], [82.18424, 22.16832], [82.14312, 22.16832], [82.14312, 22.13877]]]}}, {"type": "Feature", "properties": {"fid": 13, "name": "Fake Industrial Zone 13 (Bhilai (steel))"}, "geometry": {"type": "Polygon", "coordinates": [[[81.46544, 21.16363], [81.4804, 21.16363], [81.4804, 21.1761], [81.46544, 21.1761], [81.46544, 21.16363]]]}}, {"type": "Feature", "properties": {"fid": 14, "name": "Fake Industrial Zone 14 (Bilaspur)"}, "geometry": {"type": "Polygon", "coordinates": [[[82.05312, 22.13121], [82.08043, 22.13121], [82.08043, 22.15254], [82.05312, 22.15254], [82.05312, 22.13121]]]}}, {"type": "Feature", "properties": {"fid": 15, "name": "Fake Industrial Zone 15 (Korba (power/coal))"}, "geometry": {"type": "Polygon", "coordinates": [[[82.52133, 22.44497], [82.55138, 22.44497], [82.55138, 22.47002], [82.52133, 22.47002], [82.52133, 22.44497]]]}}, {"type": "Feature", "properties": {"fid": 16, "name": "Fake Industrial Zone 16 (Durg)"}, "geometry": {"type": "Polygon", "coordinates": [[[81.22458, 21.06307], [81.26474, 21.06307], [81.26474, 21.09319], [81.22458, 21.09319], [81.22458, 21.06307]]]}}, {"type": "Feature", "properties": {"fid": 17, "name": "Fake Industrial Zone 17 (Bhilai (steel))"}, "geometry": {"type": "Polygon", "coordinates": [[[81.48714, 21.06271], [81.50354, 21.06271], [81.50354, 21.07836], [81.48714, 21.07836], [81.48714, 21.06271]]]}}, {"type": "Feature", "properties": {"fid": 18, "name": "Fake Industrial Zone 18 (Raigarh (steel/power))"}, "geometry": {"type": "Polygon", "coordinates": [[[83.33105, 22.08011], [83.36424, 22.08011], [83.36424, 22.11159], [83.33105, 22.11159], [83.33105, 22.08011]]]}}, {"type": "Feature", "properties": {"fid": 19, "name": "Fake Industrial Zone 19 (Bhilai (steel))"}, "geometry": {"type": "Polygon", "coordinates": [[[81.40199, 21.034], [81.44404, 21.034], [81.44404, 21.07644], [81.40199, 21.07644], [81.40199, 21.034]]]}}, {"type": "Feature", "properties": {"fid": 20, "name": "Fake Industrial Zone 20 (Korba (power/coal))"}, "geometry": {"type": "Polygon", "coordinates": [[[82.5101, 22.31894], [82.54014, 22.31894], [82.54014, 22.34787], [82.5101, 22.34787], [82.5101, 22.31894]]]}}, {"type": "Feature", "properties": {"fid": 21, "name": "Fake Industrial Zone 21 (Korba (power/coal))"}, "geometry": {"type": "Polygon", "coordinates": [[[82.85962, 22.45072], [82.87889, 22.45072], [82.87889, 22.47785], [82.85962, 22.47785], [82.85962, 22.45072]]]}}, {"type": "Feature", "properties": {"fid": 22, "name": "Fake Industrial Zone 22 (Jagdalpur)"}, "geometry": {"type": "Polygon", "coordinates": [[[82.08094, 19.11092], [82.09782, 19.11092], [82.09782, 19.12585], [82.08094, 19.12585], [82.08094, 19.11092]]]}}, {"type": "Feature", "properties": {"fid": 23, "name": "Fake Industrial Zone 23 (Jagdalpur)"}, "geometry": {"type": "Polygon", "coordinates": [[[82.18889, 19.23147], [82.21666, 19.23147], [82.21666, 19.25292], [82.18889, 19.25292], [82.18889, 19.23147]]]}}, {"type": "Feature", "properties": {"fid": 24, "name": "Fake Industrial Zone 24 (Korba (power/coal))"}, "geometry": {"type": "Polygon", "coordinates": [[[82.82493, 22.48037], [82.83905, 22.48037], [82.83905, 22.50396], [82.82493, 22.50396], [82.82493, 22.48037]]]}}, {"type": "Feature", "properties": {"fid": 25, "name": "Fake Industrial Zone 25 (Bhilai (steel))"}, "geometry": {"type": "Polygon", "coordinates": [[[81.17818, 21.19679], [81.19214, 21.19679], [81.19214, 21.2108], [81.17818, 21.2108], [81.17818, 21.19679]]]}}, {"type": "Feature", "properties": {"fid": 26, "name": "Fake Industrial Zone 26 (Raipur (industrial belt))"}, "geometry": {"type": "Polygon", "coordinates": [[[81.6859, 21.42218], [81.7011, 21.42218], [81.7011, 21.43809], [81.6859, 21.43809], [81.6859, 21.42218]]]}}, {"type": "Feature", "properties": {"fid": 27, "name": "Fake Industrial Zone 27 (Raipur (industrial belt))"}, "geometry": {"type": "Polygon", "coordinates": [[[81.78386, 21.33909], [81.81847, 21.33909], [81.81847, 21.36792], [81.78386, 21.36792], [81.78386, 21.33909]]]}}, {"type": "Feature", "properties": {"fid": 28, "name": "Fake Industrial Zone 28 (Bilaspur)"}, "geometry": {"type": "Polygon", "coordinates": [[[82.19099, 22.04428], [82.21071, 22.04428], [82.21071, 22.0656], [82.19099, 22.0656], [82.19099, 22.04428]]]}}, {"type": "Feature", "properties": {"fid": 29, "name": "Fake Industrial Zone 29 (Korba (power/coal))"}, "geometry": {"type": "Polygon", "coordinates": [[[82.47918, 22.36552], [82.49865, 22.36552], [82.49865, 22.39662], [82.47918, 22.39662], [82.47918, 22.36552]]]}}, {"type": "Feature", "properties": {"fid": 30, "name": "Fake Industrial Zone 30 (Bhilai (steel))"}, "geometry": {"type": "Polygon", "coordinates": [[[81.22919, 21.35649], [81.25576, 21.35649], [81.25576, 21.38665], [81.22919, 21.38665], [81.22919, 21.35649]]]}}, {"type": "Feature", "properties": {"fid": 31, "name": "Fake Industrial Zone 31 (Bilaspur)"}, "geometry": {"type": "Polygon", "coordinates": [[[82.11558, 22.07882], [82.15455, 22.07882], [82.15455, 22.11197], [82.11558, 22.11197], [82.11558, 22.07882]]]}}, {"type": "Feature", "properties": {"fid": 32, "name": "Fake Industrial Zone 32 (Raipur (industrial belt))"}, "geometry": {"type": "Polygon", "coordinates": [[[81.73749, 21.36687], [81.7494, 21.36687], [81.7494, 21.38193], [81.73749, 21.38193], [81.73749, 21.36687]]]}}, {"type": "Feature", "properties": {"fid": 33, "name": "Fake Industrial Zone 33 (Raigarh (steel/power))"}, "geometry": {"type": "Polygon", "coordinates": [[[83.35309, 22.03661], [83.36579, 22.03661], [83.36579, 22.04926], [83.35309, 22.04926], [83.35309, 22.03661]]]}}, {"type": "Feature", "properties": {"fid": 34, "name": "Fake Industrial Zone 34 (Bhilai (steel))"}, "geometry": {"type": "Polygon", "coordinates": [[[81.29673, 21.13053], [81.32717, 21.13053], [81.32717, 21.15971], [81.29673, 21.15971], [81.29673, 21.13053]]]}}, {"type": "Feature", "properties": {"fid": 35, "name": "Fake Industrial Zone 35 (Raigarh (steel/power))"}, "geometry": {"type": "Polygon", "coordinates": [[[83.23645, 21.7619], [83.2657, 21.7619], [83.2657, 21.77969], [83.23645, 21.77969], [83.23645, 21.7619]]]}}, {"type": "Feature", "properties": {"fid": 36, "name": "Fake Industrial Zone 36 (Jagdalpur)"}, "geometry": {"type": "Polygon", "coordinates": [[[82.17086, 19.08801], [82.18582, 19.08801], [82.18582, 19.10185], [82.17086, 19.10185], [82.17086, 19.08801]]]}}, {"type": "Feature", "properties": {"fid": 37, "name": "Fake Industrial Zone 37 (Bhilai (steel))"}, "geometry": {"type": "Polygon", "coordinates": [[[81.51402, 21.34267], [81.52888, 21.34267], [81.52888, 21.35509], [81.51402, 21.35509], [81.51402, 21.34267]]]}}, {"type": "Feature", "properties": {"fid": 38, "name": "Fake Industrial Zone 38 (Raigarh (steel/power))"}, "geometry": {"type": "Polygon", "coordinates": [[[83.55128, 21.75693], [83.56068, 21.75693], [83.56068, 21.76958], [83.55128, 21.76958], [83.55128, 21.75693]]]}}, {"type": "Feature", "properties": {"fid": 39, "name": "Fake Industrial Zone 39 (Jagdalpur)"}, "geometry": {"type": "Polygon", "coordinates": [[[81.99069, 19.024], [82.04092, 19.024], [82.04092, 19.06401], [81.99069, 19.06401], [81.99069, 19.024]]]}}, {"type": "Feature", "properties": {"fid": 40, "name": "Fake Industrial Zone 40 (Bilaspur)"}, "geometry": {"type": "Polygon", "coordinates": [[[82.12949, 21.94622], [82.14164, 21.94622], [82.14164, 21.96509], [82.12949, 21.96509], [82.12949, 21.94622]]]}}]}};
   </script>
 
-  <!-- Your map logic -->
-  <script src="{{ url_for('static', path='js/map.js') }}"></script>
+  <!-- Embedded Controller Logic -->
+  <script>
+/**
+ * GeoContext-AI — Main Command Center Map Controller
+ * Smart India Hackathon 2026
+ */
+
+function initCommandCenterMap() {
+  // 1. Live Telemetry Clock (Formatted: Month Day, Year | HH:MM:SS UTC)
+  const clockEl = document.getElementById("headerClock");
+  function updateHeaderClock() {
+    const now = new Date();
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = months[now.getUTCMonth()];
+    const day = String(now.getUTCDate()).padStart(2, "0");
+    const year = now.getUTCFullYear();
+    const h = String(now.getUTCHours()).padStart(2, "0");
+    const m = String(now.getUTCMinutes()).padStart(2, "0");
+    const s = String(now.getUTCSeconds()).padStart(2, "0");
+    if (clockEl) {
+      clockEl.textContent = `${month} ${day}, ${year} | ${h}:${m}:${s} UTC`;
+    }
+  }
+  setInterval(updateHeaderClock, 1000);
+  updateHeaderClock();
+
+  // 2. Initialize Leaflet Map (Centered on India matching reference image)
+  const defaultCenter = [22.0, 79.5];
+  const defaultZoom = 5;
+
+  const map = L.map("map", {
+    center: defaultCenter,
+    zoom: defaultZoom,
+    minZoom: 4,
+    maxZoom: 18,
+    zoomControl: false,
+    attributionControl: false,
+  });
+
+  // Base Layers — ESRI Satellite Imagery + Reference Boundaries/Labels (Matches Reference Image)
+  const esriSatellite = L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    { maxZoom: 18 }
+  ).addTo(map);
+
+  const esriBoundaries = L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+    { maxZoom: 18, opacity: 0.85 }
+  ).addTo(map);
+
+  // Alternative Basemaps
+  const cartoDark = L.tileLayer(
+    "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+    { maxZoom: 19 }
+  );
+
+  const osmStreet = L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    { maxZoom: 19 }
+  );
+
+  let isSatellite = true;
+  const layerToggleBtn = document.getElementById("toolLayerToggle");
+  if (layerToggleBtn) {
+    layerToggleBtn.addEventListener("click", () => {
+      if (isSatellite) {
+        map.removeLayer(esriSatellite);
+        map.removeLayer(esriBoundaries);
+        cartoDark.addTo(map);
+        isSatellite = false;
+        layerToggleBtn.title = "Current: Dark Matter (Click for Satellite)";
+      } else {
+        map.removeLayer(cartoDark);
+        esriSatellite.addTo(map);
+        esriBoundaries.addTo(map);
+        isSatellite = true;
+        layerToggleBtn.title = "Current: Satellite (Click for Dark)";
+      }
+    });
+  }
+
+  // Force Leaflet to compute full dimensions immediately
+  setTimeout(() => {
+    map.invalidateSize();
+  }, 150);
+
+  window.addEventListener("resize", () => {
+    map.invalidateSize();
+  });
+
+  // Zoom & Recenter Controls
+  document.getElementById("zoomInBtn")?.addEventListener("click", () => map.zoomIn());
+  document.getElementById("zoomOutBtn")?.addEventListener("click", () => map.zoomOut());
+  document.getElementById("toolRecenter")?.addEventListener("click", () => {
+    map.flyTo(defaultCenter, defaultZoom, { duration: 1.2 });
+  });
+
+  document.getElementById("toolFullscreen")?.addEventListener("click", () => {
+    const el = document.querySelector(".map-viewport-wrapper") || document.documentElement;
+    if (!document.fullscreenElement) {
+      el.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  });
+
+  // Layers
+  const industrialLayer = L.layerGroup().addTo(map);
+  const hotspotsLayer = L.layerGroup().addTo(map);
+
+  // 3. Load Hotspots & Industrial Polygons
+  const rawClusters = window.GEOCONTEXT_DATA?.clusters || [];
+  const industrialGeoJSON = window.GEOCONTEXT_DATA?.industrial_zones || null;
+
+  // Render Industrial Polygons (Delicate dashed amber boundaries)
+  if (industrialGeoJSON && industrialGeoJSON.features) {
+    L.geoJSON(industrialGeoJSON, {
+      style: {
+        color: "#f59e0b",
+        weight: 1.5,
+        dashArray: "4, 4",
+        fillColor: "#f59e0b",
+        fillOpacity: 0.1,
+      },
+      onEachFeature: (feature, layer) => {
+        const name = feature.properties?.name || "Industrial Belt";
+        layer.bindTooltip(`<b>${name}</b><br><span style="font-size:10px;color:#cbd5e1;">Designated Industrial Zone</span>`, {
+          className: "hud-tooltip-card",
+          sticky: true,
+        });
+      },
+    }).addTo(industrialLayer);
+  }
+
+  // 4. Custom Hover Tooltip DOM Element
+  const tooltipBox = document.createElement("div");
+  tooltipBox.className = "hud-tooltip-card";
+  tooltipBox.style.position = "absolute";
+  tooltipBox.style.display = "none";
+  tooltipBox.style.zIndex = "2500";
+  document.body.appendChild(tooltipBox);
+
+  // 5. Incident Drawer Elements
+  const drawer = document.getElementById("incidentDrawer");
+  const drawerTitle = document.getElementById("drawerTitle");
+  const drawerBadge = document.getElementById("drawerBadge");
+  const drawerCoords = document.getElementById("drawerCoords");
+  const drawerDetections = document.getElementById("drawerDetections");
+  const drawerFrp = document.getElementById("drawerFrp");
+  const drawerDistance = document.getElementById("drawerDistance");
+  const drawerFacility = document.getElementById("drawerFacility");
+  const drawerRecurrence = document.getElementById("drawerRecurrence");
+  const drawerScore = document.getElementById("drawerScore");
+  const drawerLabel = document.getElementById("drawerLabel");
+  const drawerFocusBtn = document.getElementById("drawerFocusBtn");
+
+  let activeMarkerIncident = null;
+
+  document.getElementById("drawerCloseBtn")?.addEventListener("click", () => {
+    drawer.classList.remove("open");
+  });
+
+  if (drawerFocusBtn) {
+    drawerFocusBtn.addEventListener("click", () => {
+      if (activeMarkerIncident) {
+        map.flyTo([activeMarkerIncident.lat, activeMarkerIncident.lon], 12, { duration: 1 });
+      }
+    });
+  }
+
+  // 6. Render Hotspot Markers (Pulsing, Non-Crowded, Color-Categorized)
+  const counts = { critical: 0, high: 0, moderate: 0, normal: 0 };
+
+  rawClusters.forEach(item => {
+    const tier = item.tier || "normal";
+    counts[tier] = (counts[tier] || 0) + 1;
+
+    const isCritical = tier === "critical";
+    const customHtml = `
+      <div class="hotspot-custom-marker ${tier}">
+        <div class="marker-pulse-ring"></div>
+        ${isCritical ? '<div class="marker-pulse-ring delay"></div>' : ''}
+        <div class="marker-inner-dot"></div>
+      </div>
+    `;
+
+    const icon = L.divIcon({
+      html: customHtml,
+      className: "",
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+    });
+
+    const marker = L.marker([item.lat, item.lon], { icon }).addTo(hotspotsLayer);
+
+    // Hover Interaction: HUD Tooltip
+    marker.on("mouseover", (e) => {
+      const tierLabel = tier.toUpperCase();
+      tooltipBox.innerHTML = `
+        <div class="hud-tooltip-badge ${tier}">● ${tierLabel} ANOMALY</div>
+        <div class="hud-tooltip-title">${item.name || ('Cluster #' + item.id)}</div>
+        <div class="hud-tooltip-grid">
+          <div class="hud-tooltip-row">
+            <span class="hud-tooltip-label">FRP:</span>
+            <span class="hud-tooltip-val">${item.frp} MW</span>
+          </div>
+          <div class="hud-tooltip-row">
+            <span class="hud-tooltip-label">Detections:</span>
+            <span class="hud-tooltip-val">${item.detections} pts</span>
+          </div>
+          <div class="hud-tooltip-row">
+            <span class="hud-tooltip-label">Industrial Dist:</span>
+            <span class="hud-tooltip-val">${item.distance_m} m</span>
+          </div>
+          <div class="hud-tooltip-row">
+            <span class="hud-tooltip-label">Near Facility:</span>
+            <span class="hud-tooltip-val" style="max-width:110px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;">${item.facility || 'Zoned Plant'}</span>
+          </div>
+        </div>
+      `;
+      tooltipBox.style.display = "block";
+      updateTooltipPosition(e.originalEvent);
+    });
+
+    marker.on("mousemove", (e) => {
+      updateTooltipPosition(e.originalEvent);
+    });
+
+    marker.on("mouseout", () => {
+      tooltipBox.style.display = "none";
+    });
+
+    marker.on("click", () => {
+      openIncidentDrawer(item);
+    });
+  });
+
+  function updateTooltipPosition(e) {
+    tooltipBox.style.left = `${e.clientX + 16}px`;
+    tooltipBox.style.top = `${e.clientY - 30}px`;
+  }
+
+  function openIncidentDrawer(item) {
+    activeMarkerIncident = item;
+    const tier = item.tier || "normal";
+
+    drawerTitle.textContent = `${item.name || ('Cluster #' + item.id)} Details`;
+    drawerBadge.textContent = `${tier.toUpperCase()} ANOMALY`;
+    drawerBadge.className = `hud-tooltip-badge ${tier}`;
+    drawerCoords.textContent = `${item.lat.toFixed(4)}°N, ${item.lon.toFixed(4)}°E`;
+    drawerDetections.textContent = `${item.detections} records`;
+    drawerFrp.textContent = `${item.frp} MW`;
+    drawerDistance.textContent = `${item.distance_m} m`;
+    drawerFacility.textContent = item.facility || "Industrial Facility";
+    drawerRecurrence.textContent = item.recurrence ? `${item.recurrence}%` : "Baseline";
+    drawerScore.textContent = `${item.ind_score || 0}/8`;
+    drawerLabel.textContent = item.label ? item.label.toUpperCase() : "VERIFIED";
+
+    drawer.classList.add("open");
+  }
+
+  // 7. Update Map Legend Counts
+  document.getElementById("legendCountCritical").textContent = counts.critical;
+  document.getElementById("legendCountHigh").textContent = counts.high;
+  document.getElementById("legendCountModerate").textContent = counts.moderate;
+  document.getElementById("legendCountNormal").textContent = counts.normal;
+
+  // Update Bottom Metrics (Matching reference image: 12, 28, 54)
+  document.getElementById("metricCriticalVal").textContent = counts.critical;
+  document.getElementById("metricHighVal").textContent = counts.high;
+  document.getElementById("metricTotalVal").textContent = counts.moderate;
+
+  // 8. Populate Live Alerts Feed (matching the exact alerts from reference image)
+  const alertsFeed = document.getElementById("alertsFeed");
+  const alertCandidates = rawClusters
+    .filter(c => c.alert_headline)
+    .slice(0, 5);
+
+  if (alertsFeed && alertCandidates.length > 0) {
+    alertsFeed.innerHTML = "";
+
+    alertCandidates.forEach(alert => {
+      const itemEl = document.createElement("div");
+      itemEl.className = "alert-feed-item";
+
+      itemEl.innerHTML = `
+        <div class="alert-indicator-dot ${alert.tier}"></div>
+        <div class="alert-content">
+          <div class="alert-title-row">
+            <span class="alert-headline">${alert.alert_headline}</span>
+            <span class="alert-timestamp">${alert.time_ago || "Active"}</span>
+          </div>
+          <div class="alert-subline">${alert.alert_sub || (alert.distance_m + 'm from Industrial Zone')}</div>
+          <div class="alert-location">${alert.location_name || 'Corridor Area'}</div>
+        </div>
+      `;
+
+      itemEl.addEventListener("click", () => {
+        map.flyTo([alert.lat, alert.lon], 11, { duration: 1.2 });
+        openIncidentDrawer(alert);
+      });
+
+      alertsFeed.appendChild(itemEl);
+    });
+  }
+
+  // 9. Interactive Map Search (Hotkey Ctrl+K or typing)
+  const searchInput = document.getElementById("mapSearchInput");
+  if (searchInput) {
+    window.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchInput.focus();
+      }
+    });
+
+    searchInput.addEventListener("input", (e) => {
+      const query = e.target.value.trim().toLowerCase();
+      if (!query) return;
+
+      const matched = rawClusters.find(c =>
+        (c.id && c.id.toString().toLowerCase().includes(query)) ||
+        (c.name && c.name.toLowerCase().includes(query)) ||
+        (c.location_name && c.location_name.toLowerCase().includes(query)) ||
+        (c.facility && c.facility.toLowerCase().includes(query))
+      );
+
+      if (matched) {
+        map.flyTo([matched.lat, matched.lon], 11);
+        openIncidentDrawer(matched);
+      }
+    });
+  }
+
+  // 10. Fire Activity Trend Chart
+  renderTrendChart();
+
+  function renderTrendChart() {
+    const svg = document.getElementById("trendSvg");
+    if (!svg) return;
+
+    const criticalPts = [12, 18, 38, 28, 34];
+    const highPts = [20, 30, 48, 42, 45];
+    const moderatePts = [10, 22, 29, 25, 27];
+    const normalPts = [8, 14, 18, 15, 20];
+
+    function createSmoothPath(points, height = 70, width = 300) {
+      const max = 55;
+      const step = width / (points.length - 1);
+      const coords = points.map((p, i) => [i * step, height - (p / max) * height]);
+
+      let d = `M ${coords[0][0]} ${coords[0][1]}`;
+      for (let i = 0; i < coords.length - 1; i++) {
+        const [x0, y0] = coords[i];
+        const [x1, y1] = coords[i + 1];
+        const mx = (x0 + x1) / 2;
+        d += ` C ${mx} ${y0}, ${mx} ${y1}, ${x1} ${y1}`;
+      }
+      return d;
+    }
+
+    svg.innerHTML = `
+      <defs>
+        <linearGradient id="gradCritical" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#ef4444" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#ef4444" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <!-- Grid lines -->
+      <line x1="0" y1="18" x2="300" y2="18" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3" />
+      <line x1="0" y1="46" x2="300" y2="46" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3" />
+
+      <!-- Curves -->
+      <path d="${createSmoothPath(normalPts)}" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" />
+      <path d="${createSmoothPath(moderatePts)}" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" />
+      <path d="${createSmoothPath(highPts)}" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" />
+      <path d="${createSmoothPath(criticalPts)}" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" />
+    `;
+  }
+}
+
+// Safe initialization
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initCommandCenterMap);
+} else {
+  initCommandCenterMap();
+}
+  </script>
+
 </body>
 </html>

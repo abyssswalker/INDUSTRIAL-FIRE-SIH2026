@@ -23,8 +23,19 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# Static files & template paths
+base_dir = Path(__file__).resolve().parent.parent
+static_dir = base_dir / "static"
+templates_dir = base_dir / "templates"
+
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
 @app.get("/")
 async def root():
+    landing = templates_dir / "dashboard.html"
+    if landing.exists():
+        return FileResponse(str(landing))
     return {"message": "Industrial Fire API is running. Open /docs for Swagger."}
 
 

@@ -96,9 +96,9 @@ function initCommandCenterMap() {
   document.getElementById("toolFullscreen")?.addEventListener("click", () => {
     const el = document.querySelector(".map-viewport-wrapper") || document.documentElement;
     if (!document.fullscreenElement) {
-      el.requestFullscreen().catch(() => {});
+      el.requestFullscreen().catch(() => { });
     } else {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().catch(() => { });
     }
   });
 

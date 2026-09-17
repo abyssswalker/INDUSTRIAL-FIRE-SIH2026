@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,12 +11,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap"
-    rel="stylesheet"
-  />
+    rel="stylesheet" />
 
   <!-- External Stylesheet -->
   <link rel="stylesheet" href="/static/css/style.css" />
 </head>
+
 <body>
 
   <!-- Dynamic Interactive Telemetry Background Canvas -->
@@ -32,7 +33,8 @@
     <header class="hud-header">
       <div class="hud-brand">
         <div class="brand-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
             <circle cx="12" cy="12" r="9"></circle>
             <circle cx="12" cy="12" r="4"></circle>
             <line x1="12" y1="3" x2="12" y2="7"></line>
@@ -68,34 +70,41 @@
       <section class="left-panel" aria-label="About GeoContext-AI">
         <div class="panel-tag">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+            </polygon>
           </svg>
           PLATFORM ARCHITECTURE
         </div>
         <h2 class="panel-title">WHAT IS GEOCONTEXT-AI?</h2>
         <p class="panel-desc">
-          A geospatial intelligence platform engineered to identify anomalous and potentially critical industrial fire activity by integrating real-time satellite thermal observations, high-precision metric clustering, and spatial proximity models.
+          A geospatial intelligence platform engineered to identify anomalous and potentially critical industrial fire
+          activity by integrating real-time satellite thermal observations, high-precision metric clustering, and
+          spatial proximity models.
         </p>
 
         <div class="capabilities-grid">
           <!-- Pillar 1 -->
           <div class="capability-item">
             <div class="cap-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
                 <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                 <circle cx="12" cy="12" r="10"></circle>
               </svg>
             </div>
             <div class="cap-details">
               <div class="cap-title">Satellite Thermal Telemetry</div>
-              <div class="cap-text">Ingestion of NASA FIRMS VIIRS 375m active fire data with calibrated Fire Radiative Power (FRP).</div>
+              <div class="cap-text">Ingestion of NASA FIRMS VIIRS 375m active fire data with calibrated Fire Radiative
+                Power (FRP).</div>
             </div>
           </div>
 
           <!-- Pillar 2 -->
           <div class="capability-item">
             <div class="cap-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
                 <circle cx="12" cy="12" r="3"></circle>
                 <circle cx="19" cy="7" r="2"></circle>
                 <circle cx="5" cy="17" r="2"></circle>
@@ -104,28 +113,32 @@
             </div>
             <div class="cap-details">
               <div class="cap-title">Metric Spatial Clustering</div>
-              <div class="cap-text">UTM Zone 44N (EPSG:32644) DBSCAN density clustering to isolate persistent thermal hotspots.</div>
+              <div class="cap-text">UTM Zone 44N (EPSG:32644) DBSCAN density clustering to isolate persistent thermal
+                hotspots.</div>
             </div>
           </div>
 
           <!-- Pillar 3 -->
           <div class="capability-item">
             <div class="cap-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
                 <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
                 <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
               </svg>
             </div>
             <div class="cap-details">
               <div class="cap-title">Industrial Spatial Context</div>
-              <div class="cap-text">Haversine distance correlation with OpenStreetMap & Bhuvan industrial zone boundaries.</div>
+              <div class="cap-text">Haversine distance correlation with OpenStreetMap & Bhuvan industrial zone
+                boundaries.</div>
             </div>
           </div>
 
           <!-- Pillar 4 -->
           <div class="capability-item">
             <div class="cap-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
                 <line x1="18" y1="20" x2="18" y2="10"></line>
                 <line x1="12" y1="20" x2="12" y2="4"></line>
                 <line x1="6" y1="20" x2="6" y2="14"></line>
@@ -133,7 +146,8 @@
             </div>
             <div class="cap-details">
               <div class="cap-title">Multi-Signal Classification</div>
-              <div class="cap-text">Statistical evaluation of recurrence rates, FRP variance (CV), day/night cycles, and Z-score anomalies.</div>
+              <div class="cap-text">Statistical evaluation of recurrence rates, FRP variance (CV), day/night cycles, and
+                Z-score anomalies.</div>
             </div>
           </div>
         </div>
@@ -158,7 +172,8 @@
           <a href="map.html" id="enterCommandBtn" class="btn-command-center" role="button">
             <span>ENTER COMMAND CENTER</span>
             <div class="btn-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12"></line>
                 <polyline points="12 5 19 12 12 19"></polyline>
               </svg>
@@ -360,4 +375,5 @@
   </script>
 
 </body>
+
 </html>

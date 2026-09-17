@@ -4,7 +4,8 @@ from pathlib import Path
 import geopandas as gpd
 import pandas as pd
 from fastapi import FastAPI, Depends, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from geoalchemy2.shape import to_shape
 from sqlalchemy.ext.asyncio import AsyncSession
 from shapely.geometry import Point
@@ -12,7 +13,9 @@ from shapely.geometry import Point
 from app.database import get_db
 from app import crud
 from app.schemas import LiveInferenceRequest
+from ml.data_pull_api import fetch_recent_firms_last_12_hours
 from ml.ml_pipeline import GeoContextAnomalyEngine
+from ml.run_pipeline import prepare_firms_data
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 GHOST_ZONE_BASELINES = BASE_DIR / "DataBase" / "Cluster" / "ghost_zone_baselines.csv"
@@ -31,12 +34,29 @@ templates_dir = base_dir / "templates"
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
-@app.get("/")
-async def root():
+def _dashboard_file() -> FileResponse | dict[str, str]:
     landing = templates_dir / "dashboard.html"
     if landing.exists():
         return FileResponse(str(landing))
     return {"message": "Industrial Fire API is running. Open /docs for Swagger."}
+
+
+@app.get("/")
+async def root():
+    return _dashboard_file()
+
+
+@app.get("/dashboard.html")
+async def dashboard_page():
+    return _dashboard_file()
+
+
+@app.get("/map.html")
+async def command_center():
+    map_page = templates_dir / "map.html"
+    if map_page.exists():
+        return FileResponse(str(map_page))
+    raise HTTPException(status_code=404, detail="Command center page is unavailable")
 
 
 @app.post("/api/inference/live")
@@ -80,6 +100,53 @@ async def live_inference(
         if not math.isfinite(float(record["z_score"])):
             record["z_score"] = None
     return {"results": records}
+
+
+@app.get("/api/inference/latest")
+@app.post("/api/inference/latest")
+async def live_inference_latest():
+    """Fetch the most recent NASA FIRMS detections and score them against the historical ghost-zone baselines."""
+    if not GHOST_ZONE_BASELINES.exists():
+        raise HTTPException(
+            status_code=503,
+            detail="No ghost-zone baselines are available. Run ml/run_pipeline.py first.",
+        )
+
+    baselines = pd.read_csv(GHOST_ZONE_BASELINES)
+    required = {"zone_id", "centroid_lat", "centroid_lon", "log_mean", "log_std"}
+    missing = required.difference(baselines.columns)
+    if missing:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ghost-zone baseline file is missing columns: {sorted(missing)}",
+        )
+
+    zones = gpd.GeoDataFrame(
+        baselines,
+        geometry=[
+            Point(longitude, latitude)
+            for latitude, longitude in zip(
+                baselines["centroid_lat"], baselines["centroid_lon"]
+            )
+        ],
+        crs="EPSG:4326",
+    )
+    zones = zones.to_crs("EPSG:32644")
+    zones["geometry"] = zones.geometry.buffer(GeoContextAnomalyEngine.GHOST_ZONE_RADIUS_METERS)
+    zones = zones.to_crs("EPSG:4326")
+
+    recent_points = prepare_firms_data(fetch_recent_firms_last_12_hours())
+    if recent_points.empty:
+        return {"results": [], "count": 0, "source": "nasa_firms_last_12h"}
+
+    live_points = recent_points[["latitude", "longitude", "frp", "confidence", "DayNight"]].copy()
+    results = await GeoContextAnomalyEngine().async_inference_wrapper(live_points, zones)
+    records = results.to_dict(orient="records")
+    for record in records:
+        if not math.isfinite(float(record["z_score"])):
+            record["z_score"] = None
+    return {"results": records, "count": len(records), "source": "nasa_firms_last_12h"}
+
 
 @app.get("/api/fires/current")
 async def list_current_fires(db: AsyncSession = Depends(get_db)):

@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./industrial_fire.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./industrial_fire.db")
 NASA_FIRMS_API_KEY = os.getenv("NASA_FIRMS_API_KEY", "")
 NASA_FIRMS_SENSOR = os.getenv("NASA_FIRMS_SENSOR", "VIIRS_NOAA20_NRT")
 NASA_FIRMS_DAYS = int(os.getenv("NASA_FIRMS_DAYS", "7"))

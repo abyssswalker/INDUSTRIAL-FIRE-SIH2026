@@ -121,8 +121,8 @@ function initCommandCenterMap() {
         fillOpacity: 0.1,
       },
       onEachFeature: (feature, layer) => {
-        const name = feature.properties?.name || "Industrial Belt";
-        layer.bindTooltip(`<b>${name}</b><br><span style="font-size:10px;color:#cbd5e1;">Designated Industrial Zone</span>`, {
+        const name = feature.properties?.name || "Industrial Zone";
+        layer.bindTooltip(`<b>${name}</b><br><span style="font-size:10px;color:#cbd5e1;">Industrial Zone</span>`, {
           className: "hud-tooltip-card",
           sticky: true,
         });

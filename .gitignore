@@ -9,6 +9,25 @@ venv/
 env/
 ENV/
 
+# Local environment config
+.env
+.env.*
+!.env.example
+
+# Generated runtime caches
+cache/
+*.log
+
+# Local demo data / raw datasets not needed in Git
+DataBase/*.csv
+DataBase/*.gpkg
+DataBase/*.geojson
+DataBase/Cluster/*.csv
+!DataBase/Cluster/ghost_zone_baselines.csv
+DataBase/Cluster/json_files/
+DataBase/osm/*.csv
+DataBase/osm/*.geojson
+
 # Scratch screenshots & test media
 scratch/*.png
 

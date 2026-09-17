@@ -1,6 +1,19 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Literal
 from pydantic import BaseModel, ConfigDict
+
+
+class LiveFirePoint(BaseModel):
+    latitude: float
+    longitude: float
+    frp: float
+    confidence: Literal["l", "n", "h"]
+    DayNight: Literal["D", "N"]
+
+
+class LiveInferenceRequest(BaseModel):
+    points: list[LiveFirePoint]
 
 class HotspotOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)

@@ -1,20 +1,74 @@
-from fastapi import FastAPI, Depends
+import math
+from pathlib import Path
+
+import geopandas as gpd
+import pandas as pd
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from geoalchemy2.shape import to_shape
 from sqlalchemy.ext.asyncio import AsyncSession
+from shapely.geometry import Point
 
 from app.database import get_db
 from app import crud
+from app.schemas import LiveInferenceRequest
+from ml.ml_pipeline import GeoContextAnomalyEngine
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+GHOST_ZONE_BASELINES = BASE_DIR / "DataBase" / "Cluster" / "ghost_zone_baselines.csv"
 
 app = FastAPI(
     title="Industrial Fire SIH2026 API",
-    description="NASA FIRMS + Bhuvan + PostGIS powered fire analytics",
+    description="NASA FIRMS + PostGIS powered fire analytics",
     version="0.1.0",
 )
 
 @app.get("/")
 async def root():
     return {"message": "Industrial Fire API is running. Open /docs for Swagger."}
+
+
+@app.post("/api/inference/live")
+async def live_inference(
+    payload: LiveInferenceRequest,
+):
+    """Score live FIRMS points against the generated ghost-zone CSV."""
+    if not GHOST_ZONE_BASELINES.exists():
+        raise HTTPException(
+            status_code=503,
+            detail="No ghost-zone baselines are available. Run ml/run_pipeline.py first.",
+        )
+
+    baselines = pd.read_csv(GHOST_ZONE_BASELINES)
+    required = {"zone_id", "centroid_lat", "centroid_lon", "log_mean", "log_std"}
+    missing = required.difference(baselines.columns)
+    if missing:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ghost-zone baseline file is missing columns: {sorted(missing)}",
+        )
+
+    zones = gpd.GeoDataFrame(
+        baselines,
+        geometry=[
+            Point(longitude, latitude)
+            for latitude, longitude in zip(
+                baselines["centroid_lat"], baselines["centroid_lon"]
+            )
+        ],
+        crs="EPSG:4326",
+    )
+    zones = zones.to_crs("EPSG:32644")
+    zones["geometry"] = zones.geometry.buffer(GeoContextAnomalyEngine.GHOST_ZONE_RADIUS_METERS)
+    zones = zones.to_crs("EPSG:4326")
+
+    live_points = pd.DataFrame([point.model_dump() for point in payload.points])
+    results = await GeoContextAnomalyEngine().async_inference_wrapper(live_points, zones)
+    records = results.to_dict(orient="records")
+    for record in records:
+        if not math.isfinite(float(record["z_score"])):
+            record["z_score"] = None
+    return {"results": records}
 
 @app.get("/api/fires/current")
 async def list_current_fires(db: AsyncSession = Depends(get_db)):

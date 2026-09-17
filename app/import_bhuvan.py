@@ -8,6 +8,9 @@ from app.database import DATABASE_URL
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Bhuvan data is intentionally disabled until a valid source dataset is available.
+# This importer is kept as a placeholder for future use.
+
 async def import_bhuvan_geojson(geojson_path: str) -> int:
     path = Path(geojson_path)
     if not path.is_absolute():
@@ -61,7 +64,4 @@ async def import_bhuvan_geojson(geojson_path: str) -> int:
     return inserted
 
 if __name__ == "__main__":
-    import sys
-    gj_file = sys.argv[1] if len(sys.argv) > 1 else "DataBase/bhuvan/industrial_areas.geojson"
-    count = asyncio.run(import_bhuvan_geojson(gj_file))
-    print(f"Inserted {count} Bhuvan industrial polygons.")
+    print("Bhuvan import is disabled: no source dataset is available in DataBase/bhuvan yet.")

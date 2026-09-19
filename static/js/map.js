@@ -149,6 +149,7 @@ function initCommandCenterMap() {
   const drawerFacility = document.getElementById("drawerFacility");
   const drawerRecurrence = document.getElementById("drawerRecurrence");
   const drawerScore = document.getElementById("drawerScore");
+  const drawerZScore = document.getElementById("drawerZScore");
   const drawerLabel = document.getElementById("drawerLabel");
   const drawerFocusBtn = document.getElementById("drawerFocusBtn");
 
@@ -263,6 +264,8 @@ function initCommandCenterMap() {
     drawerFacility.textContent = item.facility || "Industrial Facility";
     drawerRecurrence.textContent = item.recurrence ? `${item.recurrence}%` : "Baseline";
     drawerScore.textContent = `${item.ind_score || 0}/8`;
+    const zScore = Number(item.z_score);
+    drawerZScore.textContent = Number.isFinite(zScore) ? zScore.toFixed(2) : "Baseline";
     drawerLabel.textContent = item.label ? item.label.toUpperCase() : "VERIFIED";
 
     drawer.classList.add("open");
@@ -274,10 +277,10 @@ function initCommandCenterMap() {
   document.getElementById("legendCountModerate").textContent = counts.moderate;
   document.getElementById("legendCountNormal").textContent = counts.normal;
 
-  // Update Bottom Metrics (Matching reference image: 12, 28, 54)
+  // Update Bottom Metrics
   document.getElementById("metricCriticalVal").textContent = counts.critical;
   document.getElementById("metricHighVal").textContent = counts.high;
-  document.getElementById("metricTotalVal").textContent = counts.moderate;
+  document.getElementById("metricTotalVal").textContent = Object.values(counts).reduce((total, count) => total + count, 0);
 
   // 8. Populate Live Alerts Feed (matching the exact alerts from reference image)
   const alertsFeed = document.getElementById("alertsFeed");

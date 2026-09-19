@@ -1,4 +1,6 @@
 import math
+import csv
+import re
 from pathlib import Path
 
 import geopandas as gpd
@@ -19,6 +21,7 @@ from ml.run_pipeline import prepare_firms_data
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 GHOST_ZONE_BASELINES = BASE_DIR / "DataBase" / "Cluster" / "ghost_zone_baselines.csv"
+MANUAL_INDUSTRIAL_FIRES = BASE_DIR / "DataBase" / "manual_industrial_fires.csv"
 
 app = FastAPI(
     title="Industrial Fire SIH2026 API",
@@ -164,6 +167,28 @@ async def list_current_fires(db: AsyncSession = Depends(get_db)):
             },
         })
     return {"type": "FeatureCollection", "features": features}
+
+
+@app.get("/api/fires/historical-industrial")
+async def list_historical_industrial_fires():
+    """Return manually recorded industrial fire disasters for map display."""
+    if not MANUAL_INDUSTRIAL_FIRES.exists():
+        return {"fires": []}
+
+    fires = []
+    with MANUAL_INDUSTRIAL_FIRES.open("r", encoding="utf-8-sig", newline="") as file:
+        for row in csv.DictReader(file):
+            coordinates = row.get("Coordinates", "")
+            values = re.findall(r"[-+]?\d+(?:\.\d+)?", coordinates)
+            if len(values) < 2:
+                continue
+            fires.append({
+                "name": row.get("Place Name", "Historical Fire Disaster"),
+                "lat": float(values[0]),
+                "lon": float(values[1]),
+                "date": row.get("Date", "Not Provided"),
+            })
+    return {"fires": fires}
 
 @app.get("/api/fires/industrial-nearby")
 async def fires_near_industrial(

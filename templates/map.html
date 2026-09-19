@@ -290,6 +290,13 @@
       font-weight: 600;
     }
 
+    .nav-link-item.panel-toggle {
+      width: 100%;
+      border: 0;
+      font: inherit;
+      text-align: left;
+    }
+
     .nav-badge {
       margin-left: auto;
       background: var(--color-critical);
@@ -353,6 +360,10 @@
       gap: 14px;
       min-height: 460px;
       flex: 1;
+    }
+
+    .upper-workspace.insights-hidden {
+      grid-template-columns: 1fr;
     }
 
     /* The Map Container (Hero Element) */
@@ -458,6 +469,13 @@
       color: var(--text-main);
       background: var(--bg-card-hover);
       border-color: var(--border-focus);
+    }
+
+    .tool-action-btn.active {
+      color: var(--text-main);
+      border-color: var(--blue-primary);
+      background: var(--blue-active-pill);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.18);
     }
 
     /* Floating Vertical Zoom Controls */
@@ -589,6 +607,31 @@
       box-shadow: 0 0 6px rgba(34, 211, 238, 0.45);
     }
 
+    .legend-historical-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-body);
+    }
+
+    .legend-historical-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend-historical-dot {
+      width: 8px;
+      height: 8px;
+      border: 1px solid #ffffff;
+      border-radius: 50%;
+      background: #000000;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+      flex-shrink: 0;
+    }
+
     /* Floating Map Scale Bar (Bottom-Right) */
     .map-scale-readout {
       position: absolute;
@@ -626,6 +669,10 @@
       gap: 12px;
       min-height: 0;
       height: 100%;
+    }
+
+    .right-stack.is-hidden {
+      display: none;
     }
 
     /* Panel Card Container */
@@ -1043,7 +1090,7 @@
       box-shadow: 0 0 6px var(--color-normal);
     }
 
-    /* Card 4: Built By Team Card */
+    /* Card 4: Z-score Formula */
     .team-card {
       display: flex;
       flex-direction: column;
@@ -1259,6 +1306,15 @@
     .hotspot-custom-marker.alerted .marker-pulse-ring {
       border-color: var(--color-critical);
       background: rgba(239, 68, 68, 0.12);
+    }
+
+    .historical-fire-marker {
+      width: 10px;
+      height: 10px;
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      background: #000000;
+      box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55), 0 0 8px rgba(255, 255, 255, 0.5);
     }
 
     .live-firms-marker {
@@ -1620,24 +1676,16 @@
             </svg>
             <span class="nav-label">Live Map</span>
           </a>
-          <a href="#alertsFeed" class="nav-link-item" data-scroll-target="alertsFeed">
+          <button id="alertsAnalyticsToggle" type="button" class="nav-link-item panel-toggle" aria-expanded="false"
+            aria-controls="rightInsightStack">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>
-            <span class="nav-label">Alerts</span>
+            <span class="nav-label">Alerts &amp; Analytics</span>
             <span id="alertsNavBadge" class="nav-badge">0</span>
-          </a>
-          <a href="#insightsCard" class="nav-link-item" data-scroll-target="insightsCard">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="20" x2="18" y2="10"></line>
-              <line x1="12" y1="20" x2="12" y2="4"></line>
-              <line x1="6" y1="20" x2="6" y2="14"></line>
-            </svg>
-            <span class="nav-label">Analytics</span>
-          </a>
+          </button>
         </nav>
 
         <div class="sidebar-bottom-card">
@@ -1656,7 +1704,7 @@
       <main class="center-stage">
 
         <!-- Upper Workspace: Map (The Hero) + Right Stack -->
-        <div class="upper-workspace">
+        <div id="upperWorkspace" class="upper-workspace insights-hidden">
 
           <!-- The Map Viewport (Hero Element) -->
           <div class="map-viewport-wrapper">
@@ -1690,6 +1738,7 @@
               </button>
               <button id="fetchLatestFirmsBtn" class="tool-action-btn"
                 title="Fetch latest NASA FIRMS detections from the last 12 hours">12h</button>
+              <button id="toolColorMode" class="tool-action-btn" title="Switch to site category colors">ALERT</button>
               <button class="tool-action-btn" title="3D Terrain Mode (Perspective)">3D</button>
               <button id="toolFullscreen" class="tool-action-btn" title="Fullscreen Viewport">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -1748,14 +1797,25 @@
               <div class="legend-site-row">
                 <span class="legend-site-dot industrial"></span>
                 <span>Industrial Site</span>
+                <span id="legendCountIndustrial" class="legend-count">0</span>
               </div>
               <div class="legend-site-row">
                 <span class="legend-site-dot mining"></span>
                 <span>Mining Site</span>
+                <span id="legendCountMining" class="legend-count">0</span>
               </div>
               <div class="legend-site-row">
                 <span class="legend-site-dot power"></span>
                 <span>Power Plant</span>
+                <span id="legendCountPower" class="legend-count">0</span>
+              </div>
+              <div class="legend-divider"></div>
+              <div class="legend-historical-row">
+                <span class="legend-historical-label">
+                  <span class="legend-historical-dot"></span>
+                  <span>Historical Fire Disaster</span>
+                </span>
+                <span id="legendCountHistorical" class="legend-count">0</span>
               </div>
             </div>
 
@@ -1775,7 +1835,7 @@
           </div>
 
           <!-- Right-Side Stack: Live Alerts + Fire Activity Trend -->
-          <div class="right-stack">
+          <div id="rightInsightStack" class="right-stack is-hidden">
 
             <!-- Live Alerts Panel -->
             <div class="dashboard-card live-alerts-card">
@@ -1993,16 +2053,17 @@
             </div>
           </div>
 
-          <!-- Card 4: Built By Team Card -->
+          <!-- Card 4: Z-score Formula -->
           <div class="dashboard-card team-card">
             <div class="team-header-area">
-              <span class="team-eyebrow">BUILT BY</span>
-              <h4 class="team-title">CLUSTERS</h4>
-              <span class="team-event">Smart India Hackathon 2026</span>
+              <span class="team-eyebrow">ANOMALY DETECTION</span>
+              <h4 class="team-title">Z-SCORE FORMULA</h4>
+              <span class="team-event">Z = (ln(FRP) - log mean) / log standard deviation</span>
             </div>
 
             <div class="team-wave-footer">
-              <span class="team-quote">Operational insight for faster industrial-fire response.</span>
+              <span class="team-quote">log_frp = ln(FRP); ln is the natural logarithm. Baselines use the historical mean
+                and standard deviation of log_frp.</span>
               <!-- Topographic Wave Curve SVG with explicit dimensions -->
               <svg class="topographic-wave-svg" width="100%" height="34" viewBox="0 0 200 40"
                 preserveAspectRatio="none">
@@ -2058,6 +2119,10 @@
           <div class="drawer-stat-card">
             <span class="drawer-stat-lbl">Industrial Score</span>
             <span id="drawerScore" class="drawer-stat-val">6 / 8</span>
+          </div>
+          <div class="drawer-stat-card">
+            <span class="drawer-stat-lbl">Z-score</span>
+            <span id="drawerZScore" class="drawer-stat-val">Baseline</span>
           </div>
           <div class="drawer-stat-card">
             <span class="drawer-stat-lbl">Model Classification</span>
@@ -2141,6 +2206,16 @@
           navItems.forEach((item) => item.classList.toggle("active", item === link));
           target.scrollIntoView({ behavior: "smooth", block: "center" });
         });
+      });
+
+      const alertsAnalyticsToggle = document.getElementById("alertsAnalyticsToggle");
+      const rightInsightStack = document.getElementById("rightInsightStack");
+      const upperWorkspace = document.getElementById("upperWorkspace");
+      alertsAnalyticsToggle?.addEventListener("click", () => {
+        const isHidden = rightInsightStack.classList.toggle("is-hidden");
+        upperWorkspace.classList.toggle("insights-hidden", isHidden);
+        alertsAnalyticsToggle.setAttribute("aria-expanded", String(!isHidden));
+        alertsAnalyticsToggle.classList.toggle("active", !isHidden);
       });
 
       // 1. Live Telemetry Clock (Formatted: Month Day, Year | HH:MM:SS UTC)
@@ -2244,6 +2319,7 @@
       // Layers
       const industrialLayer = L.layerGroup().addTo(map);
       const hotspotsLayer = L.layerGroup().addTo(map);
+      const historicalFiresLayer = L.layerGroup().addTo(map);
       const liveFirmsLayer = L.layerGroup().addTo(map);
       const liveDataStatus = document.getElementById("liveDataStatus");
 
@@ -2334,6 +2410,34 @@
       const displayClusters = [...rawClusters, ...demoDetections];
       const industrialGeoJSON = window.GEOCONTEXT_DATA?.industrial_zones || null;
 
+      async function loadHistoricalFires() {
+        try {
+          const response = await fetch("/api/fires/historical-industrial");
+          if (!response.ok) throw new Error("Historical fire data unavailable");
+          const data = await response.json();
+          const historicalCount = document.getElementById("legendCountHistorical");
+          if (historicalCount) historicalCount.textContent = data.fires?.length || 0;
+          (data.fires || []).forEach(fire => {
+            const marker = L.marker([fire.lat, fire.lon], {
+              icon: L.divIcon({
+                className: "",
+                html: '<div class="historical-fire-marker"></div>',
+                iconSize: [14, 14],
+                iconAnchor: [7, 7],
+              }),
+            });
+            marker.bindTooltip(
+              `<b>Historical Fire Disaster</b><br>${fire.name}<br><span style="font-size:10px;color:#cbd5e1;">Date: ${fire.date}</span>`,
+              { className: "hud-tooltip-card", sticky: true }
+            );
+            marker.addTo(historicalFiresLayer);
+          });
+        } catch (error) {
+          console.warn("Unable to load historical industrial fires", error);
+        }
+      }
+      loadHistoricalFires();
+
       // Render Industrial Polygons (Delicate dashed amber boundaries)
       if (industrialGeoJSON && industrialGeoJSON.features) {
         L.geoJSON(industrialGeoJSON, {
@@ -2373,6 +2477,7 @@
       const drawerFacility = document.getElementById("drawerFacility");
       const drawerRecurrence = document.getElementById("drawerRecurrence");
       const drawerScore = document.getElementById("drawerScore");
+      const drawerZScore = document.getElementById("drawerZScore");
       const drawerLabel = document.getElementById("drawerLabel");
       const drawerFocusBtn = document.getElementById("drawerFocusBtn");
 
@@ -2406,29 +2511,49 @@
 
       // 6. Render Hotspot Markers (Pulsing, Non-Crowded, Color-Categorized)
       const counts = { critical: 0, high: 0, moderate: 0, normal: 0 };
+      const siteCounts = { industrial: 0, mining: 0, power: 0 };
+      const hotspotMarkers = [];
+      let colorMode = "alert";
 
-      displayClusters.forEach(item => {
-        const classification = classifyZScore(item.z_score);
-        const tier = classification.key;
-        counts[tier] = (counts[tier] || 0) + 1;
+      function getSiteCategory(item) {
+        const siteText = [item.label, item.name, item.facility].filter(Boolean).join(" ").toLowerCase();
 
+        if (/power|thermal|electric|ntpc|plant/.test(siteText)) return "power";
+        if (/mining|mine|quarry|coal|iron ore/.test(siteText)) return "mining";
+        if (/industrial|industry|factory|steel|landuse=industrial/.test(siteText)) return "industrial";
+        return "industrial";
+      }
+
+      function createHotspotIcon(tier, siteCategory) {
         const isCritical = tier === "critical";
+        const colorClass = colorMode === "site" ? `site-${siteCategory}` : tier;
         const customHtml = `
-      <div class="hotspot-custom-marker ${tier}">
+      <div class="hotspot-custom-marker ${tier} ${colorClass}">
         <div class="marker-pulse-ring"></div>
         ${isCritical ? '<div class="marker-pulse-ring delay"></div>' : ''}
         <div class="marker-inner-dot"></div>
       </div>
     `;
 
-        const icon = L.divIcon({
+        return L.divIcon({
           html: customHtml,
           className: "",
           iconSize: [20, 20],
           iconAnchor: [10, 10],
         });
+      }
+
+      displayClusters.forEach(item => {
+        const classification = classifyZScore(item.z_score);
+        const tier = classification.key;
+        counts[tier] = (counts[tier] || 0) + 1;
+
+        const siteCategory = getSiteCategory(item);
+        siteCounts[siteCategory] += 1;
+        const icon = createHotspotIcon(tier, siteCategory);
 
         const marker = L.marker([item.lat, item.lon], { icon }).addTo(hotspotsLayer);
+        hotspotMarkers.push({ marker, tier, siteCategory });
 
         // Hover Interaction: HUD Tooltip
         marker.on("mouseover", (e) => {
@@ -2481,6 +2606,25 @@
         });
       });
 
+      const colorModeButton = document.getElementById("toolColorMode");
+      colorModeButton?.addEventListener("click", () => {
+        colorMode = colorMode === "alert" ? "site" : "alert";
+        hotspotMarkers.forEach(({ marker, tier, siteCategory }) => {
+          marker.setIcon(createHotspotIcon(tier, siteCategory));
+        });
+        const siteModeActive = colorMode === "site";
+        if (siteModeActive) {
+          map.removeLayer(historicalFiresLayer);
+        } else {
+          historicalFiresLayer.addTo(map);
+        }
+        colorModeButton.textContent = siteModeActive ? "SITE" : "ALERT";
+        colorModeButton.classList.toggle("active", siteModeActive);
+        colorModeButton.title = siteModeActive
+          ? "Switch to alert severity colors"
+          : "Switch to industrial, mining, and power plant colors";
+      });
+
       function updateTooltipPosition(e) {
         tooltipBox.style.left = `${e.clientX + 16}px`;
         tooltipBox.style.top = `${e.clientY - 30}px`;
@@ -2502,6 +2646,7 @@
         drawerFacility.textContent = item.facility || "Industrial Facility";
         drawerRecurrence.textContent = item.recurrence ? `${item.recurrence}%` : "Baseline";
         drawerScore.textContent = `${item.ind_score || 0}/8`;
+        drawerZScore.textContent = Number.isFinite(zScore) ? zScore.toFixed(2) : "Baseline";
         drawerLabel.textContent = Number.isFinite(zScore)
           ? `${classification.label} (Z ${zScore.toFixed(2)})`
           : "BASELINE / NORMAL OPERATING";
@@ -2514,11 +2659,14 @@
       document.getElementById("legendCountHigh").textContent = counts.high;
       document.getElementById("legendCountModerate").textContent = counts.moderate;
       document.getElementById("legendCountNormal").textContent = counts.normal;
+      document.getElementById("legendCountIndustrial").textContent = siteCounts.industrial;
+      document.getElementById("legendCountMining").textContent = siteCounts.mining;
+      document.getElementById("legendCountPower").textContent = siteCounts.power;
 
-      // Update Bottom Metrics (Matching reference image: 12, 28, 54)
+      // Update Bottom Metrics
       document.getElementById("metricCriticalVal").textContent = counts.critical;
       document.getElementById("metricHighVal").textContent = counts.high;
-      document.getElementById("metricTotalVal").textContent = counts.moderate;
+      document.getElementById("metricTotalVal").textContent = Object.values(counts).reduce((total, count) => total + count, 0);
 
       // 8. Populate Live Alerts Feed (matching the exact alerts from reference image)
       const alertsFeed = document.getElementById("alertsFeed");

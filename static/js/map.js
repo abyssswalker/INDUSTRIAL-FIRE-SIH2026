@@ -169,13 +169,24 @@ function initCommandCenterMap() {
   // 6. Render Hotspot Markers (Pulsing, Non-Crowded, Color-Categorized)
   const counts = { critical: 0, high: 0, moderate: 0, normal: 0 };
 
+  function getSiteCategory(item) {
+    const siteText = [item.label, item.name, item.facility].filter(Boolean).join(" ").toLowerCase();
+
+    if (/power|thermal|electric|ntpc|plant/.test(siteText)) return "power";
+    if (/mining|mine|quarry|coal|iron ore/.test(siteText)) return "mining";
+    if (/industrial|industry|factory|steel|landuse=industrial/.test(siteText)) return "industrial";
+    return "industrial";
+  }
+
   rawClusters.forEach(item => {
     const tier = item.tier || "normal";
     counts[tier] = (counts[tier] || 0) + 1;
 
     const isCritical = tier === "critical";
+    const isAlerted = isCritical || Boolean(item.alert_headline);
+    const siteCategory = getSiteCategory(item);
     const customHtml = `
-      <div class="hotspot-custom-marker ${tier}">
+      <div class="hotspot-custom-marker ${tier} site-${siteCategory}${isAlerted ? ' alerted' : ''}">
         <div class="marker-pulse-ring"></div>
         ${isCritical ? '<div class="marker-pulse-ring delay"></div>' : ''}
         <div class="marker-inner-dot"></div>
